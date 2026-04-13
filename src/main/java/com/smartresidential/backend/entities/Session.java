@@ -1,31 +1,30 @@
 package com.smartresidential.backend.entities;
-
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "apartments")
-
-public class Apartment {
+@Table(name = "sessions")
 
 
+public class Session {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "building_id", nullable = false)
-    private Building building;
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
-    @Column(name = "unit_number", nullable = false)
-    private String unitNumber;
+    @Column(nullable = false, columnDefinition = "TEXT")
+    private String token;
 
-    private Integer floor;
+    @Column(name = "expires_at", nullable = false)
+    private LocalDateTime expiresAt;
 
     @Column(name = "created_at")
     private LocalDateTime createdAt;
 
-    public Apartment() {
+    public Session() {
     }
 
     @PrePersist
@@ -37,16 +36,16 @@ public class Apartment {
         return id;
     }
 
-    public Building getBuilding() {
-        return building;
+    public User getUser() {
+        return user;
     }
 
-    public String getUnitNumber() {
-        return unitNumber;
+    public String getToken() {
+        return token;
     }
 
-    public Integer getFloor() {
-        return floor;
+    public LocalDateTime getExpiresAt() {
+        return expiresAt;
     }
 
     public LocalDateTime getCreatedAt() {
@@ -57,20 +56,20 @@ public class Apartment {
         this.id = id;
     }
 
-    public void setBuilding(Building building) {
-        this.building = building;
+    public void setUser(User user) {
+        this.user = user;
     }
 
-    public void setUnitNumber(String unitNumber) {
-        this.unitNumber = unitNumber;
+    public void setToken(String token) {
+        this.token = token;
     }
 
-    public void setFloor(Integer floor) {
-        this.floor = floor;
+    public void setExpiresAt(LocalDateTime expiresAt) {
+        this.expiresAt = expiresAt;
     }
 
     public void setCreatedAt(LocalDateTime createdAt) {
         this.createdAt = createdAt;
     }
-}
 
+}
