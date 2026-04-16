@@ -1,5 +1,5 @@
-package com.smartresidential.model;
-
+package com.smartresidential.backend.entities;
+//ndryshime
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
