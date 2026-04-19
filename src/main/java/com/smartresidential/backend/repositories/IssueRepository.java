@@ -1,11 +1,10 @@
 package com.smartresidential.backend.repositories;
 
 import com.smartresidential.backend.entities.Issue;
-import org.springframework.data.jpa.repository.JpaRepository;
 
 import java.util.List;
 
-public interface IssueRepository extends JpaRepository<Issue, Long> {
+public interface IssueRepository extends BaseRepository<Issue, Long> {
 
     List<Issue> findByStatus(String status);
 
