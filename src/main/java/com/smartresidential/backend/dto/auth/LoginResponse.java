@@ -5,7 +5,7 @@ public class LoginResponse {
     private String token;
     private String email;
     private String role;
-    private String tenant;
+    private String identifier; //tenantIdentifier
 
     public LoginResponse() {}
 
@@ -21,9 +21,7 @@ public class LoginResponse {
         return role;
     }
 
-    public String getTenant() {
-        return tenant;
-    }
+    public String getTenantIdentifier(){return identifier;}
 
     public void setToken(String token) {
         this.token = token;
@@ -37,7 +35,7 @@ public class LoginResponse {
         this.role = role;
     }
 
-    public void setTenant(String tenant) {
-        this.tenant = tenant;
+    public void setTenantIdentifier(String tenantIdentifier) {
+        this.identifier = identifier;
     }
 }
