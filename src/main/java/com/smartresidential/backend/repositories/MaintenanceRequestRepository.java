@@ -2,13 +2,15 @@ package com.smartresidential.backend.repositories;
 
 import com.smartresidential.backend.entities.MaintenanceRequest;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
-@Repository
 public interface MaintenanceRequestRepository extends JpaRepository<MaintenanceRequest, Long> {
-    List<MaintenanceRequest> findByScheduledDate(LocalDate scheduledDate);
-    List<MaintenanceRequest> findByTechnicianId(Long technicianId);
+
+    Optional<MaintenanceRequest> findByIssue_Id(Long issueId);
+
+    List<MaintenanceRequest> findByRequestedBy_Id(Long requestedById);
+
+    List<MaintenanceRequest> findByRequestedAt(java.time.LocalDateTime requestedAt);
 }
