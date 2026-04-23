@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.apartment.ApartmentResponseDTO;
 import com.smartresidential.backend.dto.apartment.CreateApartmentRequest;
@@ -7,7 +7,7 @@ import com.smartresidential.backend.entities.Apartment;
 import com.smartresidential.backend.entities.Building;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.BuildingRepository;
-import com.smartresidential.backend.services.ApartmentService;
+import com.smartresidential.backend.services.interfaces.ApartmentService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

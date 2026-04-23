@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.interfaces;
 
 import com.smartresidential.backend.dto.notification.CreateNotificationRequest;
 import com.smartresidential.backend.dto.notification.NotificationResponseDTO;

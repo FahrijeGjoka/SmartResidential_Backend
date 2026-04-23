@@ -2,7 +2,7 @@ package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.entities.Session;
 import com.smartresidential.backend.repositories.SessionRepository;
-import com.smartresidential.backend.services.SessionService;
+import com.smartresidential.backend.services.interfaces.SessionService;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;

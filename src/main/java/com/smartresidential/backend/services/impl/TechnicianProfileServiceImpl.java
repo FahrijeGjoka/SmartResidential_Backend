@@ -7,7 +7,7 @@ import com.smartresidential.backend.entities.TechnicianProfile;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.services.TechnicianProfileService;
+import com.smartresidential.backend.services.interfaces.TechnicianProfileService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

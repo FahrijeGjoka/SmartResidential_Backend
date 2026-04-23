@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.buildingAnnouncement.BuildingAnnouncementResponseDTO;
 import com.smartresidential.backend.dto.buildingAnnouncement.CreateBuildingAnnouncementRequest;
@@ -9,7 +9,7 @@ import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.repositories.BuildingAnnouncementRepository;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.services.BuildingAnnouncementService;
+import com.smartresidential.backend.services.interfaces.BuildingAnnouncementService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

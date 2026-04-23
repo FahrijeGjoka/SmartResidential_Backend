@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.residentProfile.CreateResidentProfileRequest;
 import com.smartresidential.backend.dto.residentProfile.ResidentProfileResponseDTO;
@@ -9,7 +9,7 @@ import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.services.ResidentProfileService;
+import com.smartresidential.backend.services.interfaces.ResidentProfileService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

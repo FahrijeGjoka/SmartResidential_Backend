@@ -2,7 +2,7 @@ package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.dto.tenant.CreateTenantRequest;
 import com.smartresidential.backend.dto.tenant.CreateTenantResponse;
-import com.smartresidential.backend.services.TenantService;
+import com.smartresidential.backend.services.impl.TenantService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;

@@ -15,7 +15,7 @@ import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.IssueStatusHistoryRepository;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.services.IssueService;
+import com.smartresidential.backend.services.interfaces.IssueService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

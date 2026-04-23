@@ -6,7 +6,7 @@ import com.smartresidential.backend.entities.AIClassificationLog;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.repositories.AIClassificationLogRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
-import com.smartresidential.backend.services.AIClassificationLogService;
+import com.smartresidential.backend.services.interfaces.AIClassificationLogService;
 import org.springframework.stereotype.Service;
 
 import java.util.Comparator;

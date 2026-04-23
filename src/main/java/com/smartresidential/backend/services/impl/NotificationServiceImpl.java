@@ -4,7 +4,7 @@ import com.smartresidential.backend.dto.notification.CreateNotificationRequest;
 import com.smartresidential.backend.dto.notification.NotificationResponseDTO;
 import com.smartresidential.backend.entities.Notification;
 import com.smartresidential.backend.repositories.NotificationRepository;
-import com.smartresidential.backend.services.NotificationService;
+import com.smartresidential.backend.services.interfaces.NotificationService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

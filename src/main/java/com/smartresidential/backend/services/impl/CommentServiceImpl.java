@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.entities.Comment;
 import com.smartresidential.backend.entities.Issue;
@@ -6,6 +6,7 @@ import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.repositories.CommentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.CommentService;
 import org.springframework.stereotype.Service;
 import com.smartresidential.backend.dto.comment.CommentRequestDTO;
 import com.smartresidential.backend.dto.comment.CommentResponseDTO;

@@ -1,10 +1,8 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.interfaces;
 
 
 import com.smartresidential.backend.dto.comment.CommentRequestDTO;
 import com.smartresidential.backend.dto.comment.CommentResponseDTO;
-import com.smartresidential.backend.dto.comment.CreateCommentRequest;
-import com.smartresidential.backend.dto.comment.UpdateCommentRequest;
 
 import java.util.List;
 
