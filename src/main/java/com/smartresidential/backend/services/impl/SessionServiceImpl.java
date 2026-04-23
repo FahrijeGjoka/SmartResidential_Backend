@@ -64,6 +64,25 @@ public class SessionServiceImpl implements SessionService {
     }
 
     @Override
+    public List<Session> getSessionsByToken(String token) {
+        Session session = sessionRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Session not found with token: " + token));
+
+        return sessionRepository.findAllByUserId(session.getUser().getId());
+    }
+
+    @Override
+    public void logoutAllByToken(String token) {
+        Session session = sessionRepository.findByToken(token)
+                .orElseThrow(() -> new RuntimeException("Session not found with token: " + token));
+
+        Long userId = session.getUser().getId();
+
+        List<Session> sessions = sessionRepository.findAllByUserId(userId);
+        sessionRepository.deleteAll(sessions);
+    }
+
+    @Override
     public void deleteSessionsByUserId(Long userId) {
         List<Session> sessions = sessionRepository.findAllByUserId(userId);
         sessionRepository.deleteAll(sessions);

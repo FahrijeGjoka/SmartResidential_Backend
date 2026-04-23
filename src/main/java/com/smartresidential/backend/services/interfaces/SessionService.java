@@ -1,5 +1,4 @@
 package com.smartresidential.backend.services.interfaces;
-
 import com.smartresidential.backend.entities.Session;
 
 import java.util.List;
@@ -10,6 +9,8 @@ public interface SessionService {
     List<Session> getAllSessions();
 
     List<Session> getSessionsByUserId(Long userId);
+
+    List<Session> getSessionsByToken(String token);
 
     Optional<Session> getSessionById(Long id);
 
@@ -24,6 +25,8 @@ public interface SessionService {
     void deleteSessionsByUserId(Long userId);
 
     void logout(String token);
+
+    void logoutAllByToken(String token);
 
     boolean isSessionValid(String token);
 }
