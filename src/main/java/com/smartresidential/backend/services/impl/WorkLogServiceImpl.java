@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.worklog.CreateWorkLogRequest;
 import com.smartresidential.backend.dto.worklog.WorkLogResponseDTO;
@@ -8,12 +8,11 @@ import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.repositories.WorkLogRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
-import com.smartresidential.backend.services.WorkLogService;
+import com.smartresidential.backend.services.interfaces.WorkLogService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.Duration;
-import java.time.LocalDateTime;
 import java.util.Optional;
 
 @Service

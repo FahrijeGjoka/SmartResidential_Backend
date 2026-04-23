@@ -5,7 +5,7 @@ import com.smartresidential.backend.dto.issueCategory.IssueCategoryResponseDTO;
 import com.smartresidential.backend.dto.issueCategory.UpdateIssueCategoryRequest;
 import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
-import com.smartresidential.backend.services.IssueCategoryService;
+import com.smartresidential.backend.services.interfaces.IssueCategoryService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

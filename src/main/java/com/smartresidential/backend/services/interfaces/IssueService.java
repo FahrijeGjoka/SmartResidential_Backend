@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.interfaces;
 
 import com.smartresidential.backend.dto.issue.CreateIssueRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;

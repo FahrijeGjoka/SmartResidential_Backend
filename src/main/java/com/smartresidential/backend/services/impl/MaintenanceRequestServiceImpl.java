@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 
 
@@ -10,7 +10,7 @@ import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
-import com.smartresidential.backend.services.MaintenanceRequestService;
+import com.smartresidential.backend.services.interfaces.MaintenanceRequestService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

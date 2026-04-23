@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import org.flywaydb.core.Flyway;
 import org.springframework.jdbc.core.JdbcTemplate;

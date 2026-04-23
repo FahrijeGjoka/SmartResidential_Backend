@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.interfaces;
 
 import com.smartresidential.backend.dto.buildingAnnouncement.BuildingAnnouncementResponseDTO;
 import com.smartresidential.backend.dto.buildingAnnouncement.CreateBuildingAnnouncementRequest;

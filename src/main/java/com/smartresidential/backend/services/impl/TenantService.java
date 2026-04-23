@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.tenant.CreateTenantRequest;
 import com.smartresidential.backend.dto.tenant.CreateTenantResponse;

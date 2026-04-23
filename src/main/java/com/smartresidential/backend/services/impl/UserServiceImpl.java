@@ -2,7 +2,7 @@ package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.services.UserService;
+import com.smartresidential.backend.services.interfaces.UserService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

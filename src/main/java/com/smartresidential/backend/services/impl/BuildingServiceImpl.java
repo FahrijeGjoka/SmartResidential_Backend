@@ -1,11 +1,11 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.building.BuildingResponseDTO;
 import com.smartresidential.backend.dto.building.CreateBuildingRequest;
 import com.smartresidential.backend.dto.building.UpdateBuildingRequest;
 import com.smartresidential.backend.entities.Building;
 import com.smartresidential.backend.repositories.BuildingRepository;
-import com.smartresidential.backend.services.BuildingService;
+import com.smartresidential.backend.services.interfaces.BuildingService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;

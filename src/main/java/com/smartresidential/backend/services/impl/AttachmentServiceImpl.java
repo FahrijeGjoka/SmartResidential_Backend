@@ -1,4 +1,4 @@
-package com.smartresidential.backend.services;
+package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.attachment.CreateAttachmentRequest;
 import com.smartresidential.backend.dto.attachment.AttachmentResponseDTO;
@@ -6,7 +6,7 @@ import com.smartresidential.backend.entities.Attachment;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.repositories.AttachmentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
-import com.smartresidential.backend.services.AttachmentService;
+import com.smartresidential.backend.services.interfaces.AttachmentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 

@@ -6,7 +6,7 @@ import com.smartresidential.backend.entities.AuditLog;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.repositories.AuditLogRepository;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.services.AuditLogService;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
