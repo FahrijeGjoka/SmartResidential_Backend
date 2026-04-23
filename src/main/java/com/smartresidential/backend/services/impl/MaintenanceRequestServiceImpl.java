@@ -1,69 +1,76 @@
 package com.smartresidential.backend.services.impl;
 
-
-
 import com.smartresidential.backend.dto.maintenanceRequest.CreateMaintenanceRequestRequest;
 import com.smartresidential.backend.dto.maintenanceRequest.MaintenanceRequestResponseDTO;
+import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.MaintenanceRequest;
 import com.smartresidential.backend.entities.User;
-import com.smartresidential.backend.entities.Issue;
+import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.UserRepository;
-import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.services.interfaces.MaintenanceRequestService;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.Optional;
+import java.util.List;
 
 @Service
 public class MaintenanceRequestServiceImpl implements MaintenanceRequestService {
 
-    @Autowired
-    private MaintenanceRequestRepository maintenanceRequestRepository;
+    private final MaintenanceRequestRepository maintenanceRequestRepository;
+    private final UserRepository userRepository;
+    private final IssueRepository issueRepository;
 
-    @Autowired
-    private UserRepository userRepository;
-
-    @Autowired
-    private IssueRepository issueRepository;
+    public MaintenanceRequestServiceImpl(
+            MaintenanceRequestRepository maintenanceRequestRepository,
+            UserRepository userRepository,
+            IssueRepository issueRepository
+    ) {
+        this.maintenanceRequestRepository = maintenanceRequestRepository;
+        this.userRepository = userRepository;
+        this.issueRepository = issueRepository;
+    }
 
     @Override
     public MaintenanceRequestResponseDTO createMaintenanceRequest(CreateMaintenanceRequestRequest request) {
-        // Validate issue
-        Optional<Issue> issueOptional = issueRepository.findById(request.getIssueId());
-        if (!issueOptional.isPresent()) {
-            throw new IllegalArgumentException("Issue not found");
+        Issue issue = issueRepository.findById(request.getIssueId())
+                .orElseThrow(() -> new IllegalArgumentException("Issue not found"));
+
+        User user = userRepository.findById(request.getRequestedById())
+                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+
+        if (maintenanceRequestRepository.existsByIssue_Id(request.getIssueId())) {
+            throw new IllegalArgumentException("Maintenance request already exists for this issue");
         }
 
-        // Validate user
-        Optional<User> userOptional = userRepository.findById(request.getRequestedById());
-        if (!userOptional.isPresent()) {
-            throw new IllegalArgumentException("User not found");
-        }
-
-        // Create MaintenanceRequest entity
         MaintenanceRequest maintenanceRequest = new MaintenanceRequest();
-        maintenanceRequest.setIssue(issueOptional.get());
-        maintenanceRequest.setRequestedBy(userOptional.get());
-        maintenanceRequest.setRequestNote(request.getRequestNote());
-        maintenanceRequest.setRequestedAt(LocalDateTime.now());
+        maintenanceRequest.setIssue(issue);
+        maintenanceRequest.setRequestedBy(user);
+        maintenanceRequest.setDescription(request.getDescription());
 
-        // Save MaintenanceRequest entity
         MaintenanceRequest savedRequest = maintenanceRequestRepository.save(maintenanceRequest);
 
-        // Return response DTO
         return convertToResponseDTO(savedRequest);
     }
 
     @Override
     public MaintenanceRequestResponseDTO getMaintenanceRequestById(Long id) {
-        Optional<MaintenanceRequest> maintenanceRequestOptional = maintenanceRequestRepository.findById(id);
-        if (!maintenanceRequestOptional.isPresent()) {
-            throw new IllegalArgumentException("Maintenance request not found");
-        }
-        return convertToResponseDTO(maintenanceRequestOptional.get());
+        MaintenanceRequest maintenanceRequest = maintenanceRequestRepository.findById(id)
+                .orElseThrow(() -> new IllegalArgumentException("Maintenance request not found"));
+
+        return convertToResponseDTO(maintenanceRequest);
+    }
+
+    @Override
+    public List<MaintenanceRequestResponseDTO> getAllMaintenanceRequests() {
+        return maintenanceRequestRepository.findAll()
+                .stream()
+                .map(this::convertToResponseDTO)
+                .toList();
+    }
+
+    @Override
+    public boolean existsByIssueId(Long issueId) {
+        return maintenanceRequestRepository.existsByIssue_Id(issueId);
     }
 
     private MaintenanceRequestResponseDTO convertToResponseDTO(MaintenanceRequest maintenanceRequest) {
@@ -71,7 +78,7 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
         dto.setId(maintenanceRequest.getId());
         dto.setIssueId(maintenanceRequest.getIssue().getId());
         dto.setRequestedById(maintenanceRequest.getRequestedBy().getId());
-        dto.setDescription(maintenanceRequest.getRequestNote());
+        dto.setDescription(maintenanceRequest.getDescription());
         dto.setRequestedAt(maintenanceRequest.getRequestedAt());
         return dto;
     }

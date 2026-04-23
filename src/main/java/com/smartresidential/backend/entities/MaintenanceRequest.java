@@ -19,8 +19,8 @@ public class MaintenanceRequest {
     @JoinColumn(name = "requested_by", nullable = false)
     private User requestedBy;
 
-    @Column(name = "request_note", columnDefinition = "TEXT")
-    private String requestNote;
+    @Column(columnDefinition = "TEXT")
+    private String description;
 
     @Column(name = "requested_at")
     private LocalDateTime requestedAt;
@@ -45,8 +45,8 @@ public class MaintenanceRequest {
         return requestedBy;
     }
 
-    public String getRequestNote() {
-        return requestNote;
+    public String getDescription() {
+        return description;
     }
 
     public LocalDateTime getRequestedAt() {
@@ -65,15 +65,11 @@ public class MaintenanceRequest {
         this.requestedBy = requestedBy;
     }
 
-    public void setRequestNote(String requestNote) {
-        this.requestNote = requestNote;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
     public void setRequestedAt(LocalDateTime requestedAt) {
         this.requestedAt = requestedAt;
     }
-
-    public String getDescription() {this.
-    }
 }
-

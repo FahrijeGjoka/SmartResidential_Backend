@@ -1,7 +1,5 @@
 package com.smartresidential.backend.dto.maintenanceRequest;
 
-import java.time.LocalDateTime;
-
 import jakarta.validation.constraints.NotNull;
 
 public class CreateMaintenanceRequestRequest {
@@ -12,9 +10,8 @@ public class CreateMaintenanceRequestRequest {
     @NotNull(message = "User ID is required")
     private Long requestedById;
 
-    private String requestNote;
+    private String description;
 
-    // Getters and Setters
     public Long getIssueId() {
         return issueId;
     }
@@ -31,11 +28,11 @@ public class CreateMaintenanceRequestRequest {
         this.requestedById = requestedById;
     }
 
-    public String getRequestNote() {
-        return requestNote;
+    public String getDescription() {
+        return description;
     }
 
-    public void setRequestNote(String requestNote) {
-        this.requestNote = requestNote;
+    public void setDescription(String description) {
+        this.description = description;
     }
 }
