@@ -72,5 +72,8 @@ public class MaintenanceRequest {
     public void setRequestedAt(LocalDateTime requestedAt) {
         this.requestedAt = requestedAt;
     }
+
+    public String getDescription() {this.
+    }
 }
 

@@ -1,43 +1,41 @@
-package com.smartresidential.backend.dto.maintenancerequest;
+package com.smartresidential.backend.dto.maintenanceRequest;
 
 import java.time.LocalDateTime;
 
+import jakarta.validation.constraints.NotNull;
+
 public class CreateMaintenanceRequestRequest {
-    private Long userId;
-    private String issueDescription;
-    private LocalDateTime requestedDate;
-    private String priority;
 
-    // Getter dhe Setter
-    public Long getUserId() {
-        return userId;
+    @NotNull(message = "Issue ID is required")
+    private Long issueId;
+
+    @NotNull(message = "User ID is required")
+    private Long requestedById;
+
+    private String requestNote;
+
+    // Getters and Setters
+    public Long getIssueId() {
+        return issueId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setIssueId(Long issueId) {
+        this.issueId = issueId;
     }
 
-    public String getIssueDescription() {
-        return issueDescription;
+    public Long getRequestedById() {
+        return requestedById;
     }
 
-    public void setIssueDescription(String issueDescription) {
-        this.issueDescription = issueDescription;
+    public void setRequestedById(Long requestedById) {
+        this.requestedById = requestedById;
     }
 
-    public LocalDateTime getRequestedDate() {
-        return requestedDate;
+    public String getRequestNote() {
+        return requestNote;
     }
 
-    public void setRequestedDate(LocalDateTime requestedDate) {
-        this.requestedDate = requestedDate;
-    }
-
-    public String getPriority() {
-        return priority;
-    }
-
-    public void setPriority(String priority) {
-        this.priority = priority;
+    public void setRequestNote(String requestNote) {
+        this.requestNote = requestNote;
     }
 }
