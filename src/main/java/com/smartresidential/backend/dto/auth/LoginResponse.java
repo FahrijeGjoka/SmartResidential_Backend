@@ -3,39 +3,39 @@ package com.smartresidential.backend.dto.auth;
 public class LoginResponse {
 
     private String token;
-    private String email;
-    private String role;
-    private String identifier; //tenantIdentifier
+    private String type;
+    private String tenantIdentifier;
 
-    public LoginResponse() {}
+    public LoginResponse() {
+    }
+
+    public LoginResponse(String token, String tenantIdentifier) {
+        this.token = token;
+        this.type = "Bearer";
+        this.tenantIdentifier = tenantIdentifier;
+    }
 
     public String getToken() {
         return token;
     }
 
-    public String getEmail() {
-        return email;
+    public String getType() {
+        return type;
     }
 
-    public String getRole() {
-        return role;
+    public String getTenantIdentifier() {
+        return tenantIdentifier;
     }
-
-    public String getTenantIdentifier(){return identifier;}
 
     public void setToken(String token) {
         this.token = token;
     }
 
-    public void setEmail(String email) {
-        this.email = email;
-    }
-
-    public void setRole(String role) {
-        this.role = role;
+    public void setType(String type) {
+        this.type = type;
     }
 
     public void setTenantIdentifier(String tenantIdentifier) {
-        this.identifier = identifier;
+        this.tenantIdentifier = tenantIdentifier;
     }
 }

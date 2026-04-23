@@ -1,14 +1,21 @@
 package com.smartresidential.backend.dto.auth;
-public class LoginRequest {
+
+public class RegisterRequest {
 
     private String identifier;
+    private String fullName;
     private String email;
     private String password;
 
-    public LoginRequest() {}
+    public RegisterRequest() {
+    }
 
     public String getIdentifier() {
         return identifier;
+    }
+
+    public String getFullName() {
+        return fullName;
     }
 
     public String getEmail() {
@@ -21,6 +28,10 @@ public class LoginRequest {
 
     public void setIdentifier(String identifier) {
         this.identifier = identifier;
+    }
+
+    public void setFullName(String fullName) {
+        this.fullName = fullName;
     }
 
     public void setEmail(String email) {
