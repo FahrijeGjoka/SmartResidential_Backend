@@ -15,6 +15,8 @@ import com.smartresidential.backend.repositories.VerificationTokenRepository;
 import com.smartresidential.backend.services.interfaces.AuthService;
 import com.smartresidential.backend.services.interfaces.EmailService;
 import com.smartresidential.backend.services.interfaces.JwtService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -37,6 +39,9 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailService emailService;
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public AuthServiceImpl(TenantRepository tenantRepository,
                            UserRepository userRepository,
@@ -77,6 +82,8 @@ public class AuthServiceImpl implements AuthService {
         );
 
         try {
+            setTenantSchema(tenant.getSchemaName());
+
             String normalizedEmail = request.getEmail().trim().toLowerCase();
 
             if (userRepository.existsByEmail(normalizedEmail)) {
@@ -121,8 +128,10 @@ public class AuthServiceImpl implements AuthService {
                     "Verify your email",
                     "Click the link to verify your account: " + verificationLink
             );
+
         } finally {
             TenantContext.clear();
+            resetSchema();
         }
     }
 
@@ -153,6 +162,8 @@ public class AuthServiceImpl implements AuthService {
         );
 
         try {
+            setTenantSchema(tenant.getSchemaName());
+
             VerificationToken verificationToken = verificationTokenRepository.findByToken(token.trim())
                     .orElseThrow(() -> new RuntimeException("Invalid verification token."));
 
@@ -170,12 +181,15 @@ public class AuthServiceImpl implements AuthService {
 
             verificationToken.setUsed(true);
             verificationTokenRepository.save(verificationToken);
+
         } finally {
             TenantContext.clear();
+            resetSchema();
         }
     }
 
     @Override
+    @Transactional
     public LoginResponse login(LoginRequest request) {
         validateLoginRequest(request);
 
@@ -195,6 +209,8 @@ public class AuthServiceImpl implements AuthService {
         );
 
         try {
+            setTenantSchema(tenant.getSchemaName());
+
             String normalizedEmail = request.getEmail().trim().toLowerCase();
 
             User user = userRepository.findByEmail(normalizedEmail)
@@ -224,9 +240,23 @@ public class AuthServiceImpl implements AuthService {
                     user.getRole().getName(),
                     tenant.getIdentifier()
             );
+
         } finally {
             TenantContext.clear();
+            resetSchema();
         }
+    }
+
+    private void setTenantSchema(String schemaName) {
+        entityManager.createNativeQuery(
+                "SET search_path TO \"" + schemaName + "\""
+        ).executeUpdate();
+    }
+
+    private void resetSchema() {
+        entityManager.createNativeQuery(
+                "SET search_path TO public"
+        ).executeUpdate();
     }
 
     private void validateRegisterRequest(RegisterRequest request) {

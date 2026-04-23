@@ -4,17 +4,23 @@ import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.services.interfaces.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
-import io.jsonwebtoken.SignatureAlgorithm;
+import io.jsonwebtoken.security.Keys;
 import org.springframework.stereotype.Service;
 
+import javax.crypto.SecretKey;
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
 import java.util.function.Function;
 
 @Service
 public class JwtServiceImpl implements JwtService {
 
-    private static final String SECRET_KEY = "your-super-secret-key-your-super-secret-key";
-    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24; // 24h
+    private static final String SECRET_KEY = "your_super_secret_key_your_super_secret_key_123456";
+    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24;
+
+    private SecretKey getSigningKey() {
+        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+    }
 
     @Override
     public String generateToken(User user,
@@ -28,10 +34,10 @@ public class JwtServiceImpl implements JwtService {
                 .claim("schemaName", schemaName)
                 .claim("identifier", identifier)
                 .claim("userId", user.getId())
-                .claim("roleName", user.getRole())
+                .claim("roleName", user.getRole().getName())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
+                .signWith(getSigningKey())
                 .compact();
     }
 
@@ -62,8 +68,6 @@ public class JwtServiceImpl implements JwtService {
         return email.equals(user.getEmail()) && !isTokenExpired(token);
     }
 
-    // ===== Helper methods =====
-
     private boolean isTokenExpired(String token) {
         return extractClaim(token, Claims::getExpiration).before(new Date());
     }
@@ -74,8 +78,9 @@ public class JwtServiceImpl implements JwtService {
     }
 
     private Claims extractAllClaims(String token) {
-        return Jwts.parser()
-                .setSigningKey(SECRET_KEY)
+        return Jwts.parserBuilder()
+                .setSigningKey(getSigningKey())
+                .build()
                 .parseClaimsJws(token)
                 .getBody();
     }
