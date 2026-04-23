@@ -36,6 +36,6 @@ public class LoginResponse {
     }
 
     public void setTenantIdentifier(String tenantIdentifier) {
-        this.identifier = identifier;
+        this.identifier = tenantIdentifier;
     }
 }
