@@ -1,16 +1,18 @@
-package com.smartresidential.backend.dto.maintenancerequest;
+package com.smartresidential.backend.dto.maintenanceRequest;
 
 import java.time.LocalDateTime;
 
 public class MaintenanceRequestResponseDTO {
-    private Long id;
-    private Long userId;
-    private String issueDescription;
-    private LocalDateTime requestedDate;
-    private String priority;
-    private String status;
 
-    // Getter dhe Setter
+    private Long id;
+    private Long issueId;
+    private Long requestedById;
+    private String description;
+    private LocalDateTime requestedAt;
+
+    public MaintenanceRequestResponseDTO() {
+    }
+
     public Long getId() {
         return id;
     }
@@ -19,43 +21,35 @@ public class MaintenanceRequestResponseDTO {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getIssueId() {
+        return issueId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setIssueId(Long issueId) {
+        this.issueId = issueId;
     }
 
-    public String getIssueDescription() {
-        return issueDescription;
+    public Long getRequestedById() {
+        return requestedById;
     }
 
-    public void setIssueDescription(String issueDescription) {
-        this.issueDescription = issueDescription;
+    public void setRequestedById(Long requestedById) {
+        this.requestedById = requestedById;
     }
 
-    public LocalDateTime getRequestedDate() {
-        return requestedDate;
+    public String getDescription() {
+        return description;
     }
 
-    public void setRequestedDate(LocalDateTime requestedDate) {
-        this.requestedDate = requestedDate;
+    public void setDescription(String description) {
+        this.description = description;
     }
 
-    public String getPriority() {
-        return priority;
+    public LocalDateTime getRequestedAt() {
+        return requestedAt;
     }
 
-    public void setPriority(String priority) {
-        this.priority = priority;
-    }
-
-    public String getStatus() {
-        return status;
-    }
-
-    public void setStatus(String status) {
-        this.status = status;
+    public void setRequestedAt(LocalDateTime requestedAt) {
+        this.requestedAt = requestedAt;
     }
 }
