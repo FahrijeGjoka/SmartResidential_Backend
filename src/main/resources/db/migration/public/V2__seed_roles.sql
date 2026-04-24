@@ -1,0 +1,7 @@
+INSERT INTO public.roles (name)
+VALUES
+    ('ROLE_ADMIN'),
+    ('ROLE_STAFF'),
+    ('ROLE_TECHNICIAN'),
+    ('ROLE_RESIDENT')
+ON CONFLICT (name) DO NOTHING;
