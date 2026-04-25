@@ -3,6 +3,8 @@ package com.smartresidential.backend.controllers;
 import com.smartresidential.backend.dto.issue.CreateIssueRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
 import com.smartresidential.backend.dto.issue.UpdateIssueRequest;
+import com.smartresidential.backend.dto.issueAssignment.CreateIssueAssignmentRequest;
+import com.smartresidential.backend.dto.issueStatusHistory.CreateIssueStatusHistoryRequest;
 import com.smartresidential.backend.services.interfaces.IssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -33,12 +35,29 @@ public class IssueController {
             @RequestParam(required = false) Long createdById,
             @RequestParam(required = false) String title
     ) {
-        if (status != null) return ResponseEntity.ok(issueService.getIssuesByStatus(status));
-        if (priority != null) return ResponseEntity.ok(issueService.getIssuesByPriority(priority));
-        if (categoryId != null) return ResponseEntity.ok(issueService.getIssuesByCategory(categoryId));
-        if (apartmentId != null) return ResponseEntity.ok(issueService.getIssuesByApartment(apartmentId));
-        if (createdById != null) return ResponseEntity.ok(issueService.getIssuesByCreatedBy(createdById));
-        if (title != null) return ResponseEntity.ok(issueService.searchIssuesByTitle(title));
+        if (status != null) {
+            return ResponseEntity.ok(issueService.getIssuesByStatus(status));
+        }
+
+        if (priority != null) {
+            return ResponseEntity.ok(issueService.getIssuesByPriority(priority));
+        }
+
+        if (categoryId != null) {
+            return ResponseEntity.ok(issueService.getIssuesByCategory(categoryId));
+        }
+
+        if (apartmentId != null) {
+            return ResponseEntity.ok(issueService.getIssuesByApartment(apartmentId));
+        }
+
+        if (createdById != null) {
+            return ResponseEntity.ok(issueService.getIssuesByCreatedBy(createdById));
+        }
+
+        if (title != null) {
+            return ResponseEntity.ok(issueService.searchIssuesByTitle(title));
+        }
 
         return ResponseEntity.ok(issueService.getAllIssues());
     }
@@ -65,17 +84,24 @@ public class IssueController {
     @PatchMapping("/{id}/status")
     public ResponseEntity<IssueResponseDTO> changeStatus(
             @PathVariable Long id,
-            @RequestParam String newStatus,
-            @RequestParam Long changedByUserId
+            @RequestBody CreateIssueStatusHistoryRequest request
     ) {
-        return ResponseEntity.ok(issueService.changeStatus(id, newStatus, changedByUserId));
+        return ResponseEntity.ok(
+                issueService.changeStatus(
+                        id,
+                        request.getNewStatus(),
+                        request.getChangedByUserId()
+                )
+        );
     }
 
     @PostMapping("/{id}/assign")
     public ResponseEntity<IssueResponseDTO> assignTechnician(
             @PathVariable Long id,
-            @RequestParam Long technicianId
+            @RequestBody CreateIssueAssignmentRequest request
     ) {
-        return ResponseEntity.ok(issueService.assignTechnician(id, technicianId));
+        return ResponseEntity.ok(
+                issueService.assignTechnician(id, request.getTechnicianId())
+        );
     }
 }
