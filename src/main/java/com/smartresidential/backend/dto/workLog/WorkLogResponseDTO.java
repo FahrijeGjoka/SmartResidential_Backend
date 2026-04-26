@@ -1,15 +1,16 @@
-package com.smartresidential.backend.dto.worklog;
+package com.smartresidential.backend.dto.workLog;
 
 import java.time.LocalDateTime;
 
 public class WorkLogResponseDTO {
-    private Long id;
-    private Long userId;
-    private String description;
-    private LocalDateTime startTime;
-    private LocalDateTime endTime;
 
-    // Getter dhe Setter
+    private Long id;
+    private Long issueId;
+    private Long technicianId;
+    private String description;
+    private Double hoursSpent;
+    private LocalDateTime createdAt;
+
     public Long getId() {
         return id;
     }
@@ -18,12 +19,20 @@ public class WorkLogResponseDTO {
         this.id = id;
     }
 
-    public Long getUserId() {
-        return userId;
+    public Long getIssueId() {
+        return issueId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setIssueId(Long issueId) {
+        this.issueId = issueId;
+    }
+
+    public Long getTechnicianId() {
+        return technicianId;
+    }
+
+    public void setTechnicianId(Long technicianId) {
+        this.technicianId = technicianId;
     }
 
     public String getDescription() {
@@ -34,19 +43,19 @@ public class WorkLogResponseDTO {
         this.description = description;
     }
 
-    public LocalDateTime getStartTime() {
-        return startTime;
+    public Double getHoursSpent() {
+        return hoursSpent;
     }
 
-    public void setStartTime(LocalDateTime startTime) {
-        this.startTime = startTime;
+    public void setHoursSpent(Double hoursSpent) {
+        this.hoursSpent = hoursSpent;
     }
 
-    public LocalDateTime getEndTime() {
-        return endTime;
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
     }
 
-    public void setEndTime(LocalDateTime endTime) {
-        this.endTime = endTime;
+    public void setCreatedAt(LocalDateTime createdAt) {
+        this.createdAt = createdAt;
     }
 }
