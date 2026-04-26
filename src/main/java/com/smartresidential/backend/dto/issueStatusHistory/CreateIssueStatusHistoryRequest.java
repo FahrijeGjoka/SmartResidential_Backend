@@ -2,28 +2,10 @@ package com.smartresidential.backend.dto.issueStatusHistory;
 
 public class CreateIssueStatusHistoryRequest {
 
-    private Long issueId;
-    private String oldStatus;
     private String newStatus;
-    private Long changedById;
+    private Long changedByUserId;
 
     public CreateIssueStatusHistoryRequest() {
-    }
-
-    public Long getIssueId() {
-        return issueId;
-    }
-
-    public void setIssueId(Long issueId) {
-        this.issueId = issueId;
-    }
-
-    public String getOldStatus() {
-        return oldStatus;
-    }
-
-    public void setOldStatus(String oldStatus) {
-        this.oldStatus = oldStatus;
     }
 
     public String getNewStatus() {
@@ -34,11 +16,11 @@ public class CreateIssueStatusHistoryRequest {
         this.newStatus = newStatus;
     }
 
-    public Long getChangedById() {
-        return changedById;
+    public Long getChangedByUserId() {
+        return changedByUserId;
     }
 
-    public void setChangedById(Long changedById) {
-        this.changedById = changedById;
+    public void setChangedByUserId(Long changedByUserId) {
+        this.changedByUserId = changedByUserId;
     }
 }

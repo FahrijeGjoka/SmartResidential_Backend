@@ -29,11 +29,14 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/**",
                                 "/api/tenants/**",
+
                                 "/error",
                                 "/api/roles",
                                 "/api/roles/**",
-                                "api/users/",
-                                "/api/users/**"
+                    
+                                "/api/issues/**",
+                                "/api/issue-categories/**",
+                                "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )

@@ -8,7 +8,7 @@ public class IssueStatusHistoryResponseDTO {
     private Long issueId;
     private String oldStatus;
     private String newStatus;
-    private Long changedById;
+    private Long changedByUserId;
     private LocalDateTime changedAt;
 
     public IssueStatusHistoryResponseDTO() {
@@ -46,12 +46,12 @@ public class IssueStatusHistoryResponseDTO {
         this.newStatus = newStatus;
     }
 
-    public Long getChangedById() {
-        return changedById;
+    public Long getChangedByUserId() {
+        return changedByUserId;
     }
 
-    public void setChangedById(Long changedById) {
-        this.changedById = changedById;
+    public void setChangedByUserId(Long changedByUserId) {
+        this.changedByUserId = changedByUserId;
     }
 
     public LocalDateTime getChangedAt() {
