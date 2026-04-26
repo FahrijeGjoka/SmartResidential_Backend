@@ -29,6 +29,18 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/**",
                                 "/api/tenants/**",
+                                "/api/buildings/**",
+                                "/api/technicians/**",
+                                "/api/announcements/**",
+                                "/api/sessions/**",
+                                "/api/roles/**",
+                                "/api/notifications/**",
+                                "/api/audit-logs/**",
+                                "/api/ai/**",
+                                "/api/apartments/**",
+                                "/api/work-logs/**",
+
+
 
                                 "/error",
                                 "/api/roles",

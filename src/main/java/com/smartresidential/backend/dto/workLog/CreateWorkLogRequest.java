@@ -1,20 +1,29 @@
-package com.smartresidential.backend.dto.worklog;
+package com.smartresidential.backend.dto.workLog;
 
 import java.time.LocalDateTime;
 
 public class CreateWorkLogRequest {
-    private Long userId;
+
+    private Long issueId;
+    private Long technicianId;
     private String description;
     private LocalDateTime startTime;
     private LocalDateTime endTime;
 
-    // Getter dhe Setter
-    public Long getUserId() {
-        return userId;
+    public Long getIssueId() {
+        return issueId;
     }
 
-    public void setUserId(Long userId) {
-        this.userId = userId;
+    public void setIssueId(Long issueId) {
+        this.issueId = issueId;
+    }
+
+    public Long getTechnicianId() {
+        return technicianId;
+    }
+
+    public void setTechnicianId(Long technicianId) {
+        this.technicianId = technicianId;
     }
 
     public String getDescription() {
