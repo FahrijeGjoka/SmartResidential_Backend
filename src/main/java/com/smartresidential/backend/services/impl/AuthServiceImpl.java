@@ -43,14 +43,16 @@ public class AuthServiceImpl implements AuthService {
     @PersistenceContext
     private EntityManager entityManager;
 
-    public AuthServiceImpl(TenantRepository tenantRepository,
-                           UserRepository userRepository,
-                           VerificationTokenRepository verificationTokenRepository,
-                           RoleRepository roleRepository,
-                           PasswordEncoder passwordEncoder,
-                           AuthenticationManager authenticationManager,
-                           JwtService jwtService,
-                           EmailService emailService) {
+    public AuthServiceImpl(
+            TenantRepository tenantRepository,
+            UserRepository userRepository,
+            VerificationTokenRepository verificationTokenRepository,
+            RoleRepository roleRepository,
+            PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager,
+            JwtService jwtService,
+            EmailService emailService
+    ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
@@ -103,7 +105,7 @@ public class AuthServiceImpl implements AuthService {
             user.setEmail(normalizedEmail);
             user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
             user.setIsActive(false);
-            user.setRole(defaultRole);
+            user.setRoleId(defaultRole.getId());
 
             User savedUser = userRepository.save(user);
 
@@ -227,6 +229,9 @@ public class AuthServiceImpl implements AuthService {
                     )
             );
 
+            Role role = roleRepository.findById(user.getRoleId())
+                    .orElseThrow(() -> new RuntimeException("Role not found"));
+
             String jwtToken = jwtService.generateToken(
                     user,
                     tenant.getId(),
@@ -237,7 +242,7 @@ public class AuthServiceImpl implements AuthService {
             return new LoginResponse(
                     jwtToken,
                     user.getEmail(),
-                    user.getRole().getName(),
+                    role.getName(),
                     tenant.getIdentifier()
             );
 

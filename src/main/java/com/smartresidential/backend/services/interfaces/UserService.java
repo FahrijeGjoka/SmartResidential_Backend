@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.interfaces;
 
+import com.smartresidential.backend.dto.user.CreateUserRequest;
 import com.smartresidential.backend.entities.User;
 
 import java.util.List;
@@ -19,7 +20,7 @@ public interface UserService {
 
     Optional<User> getActiveUserByEmail(String email);
 
-    User createUser(User user);
+    User createUser(CreateUserRequest request);
 
     User updateUser(Long id, User user);
 

@@ -29,6 +29,11 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/**",
                                 "/api/tenants/**",
+
+                                "/error",
+                                "/api/roles",
+                                "/api/roles/**",
+                    
                                 "/api/issues/**",
                                 "/api/issue-categories/**",
                                 "/error"

@@ -11,9 +11,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne(optional = false)
+
     @JoinColumn(name="role_id", nullable = false)
-    private Role role;
+    private Long roleId;
 
     @Column(nullable = false, unique = true)
     private String email;
@@ -49,9 +49,6 @@ public class User {
         return id;
     }
 
-    public Role getRole() {
-        return role;
-    }
 
     public String getEmail() {
         return email;
@@ -81,9 +78,6 @@ public class User {
         this.id = id;
     }
 
-    public void setRole(Role role) {
-        this.role = role;
-    }
 
     public void setEmail(String email) {
         this.email = email;
@@ -107,6 +101,14 @@ public class User {
 
     public void setIsActive(Boolean active) {
         isActive = active;
+    }
+
+    public Long getRoleId() {
+        return roleId;
+    }
+
+    public void setRoleId(Long roleId) {
+        this.roleId = roleId;
     }
 }
 
