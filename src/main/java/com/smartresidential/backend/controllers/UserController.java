@@ -59,10 +59,10 @@ public class UserController {
         }
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setRole(role);
+        user.setRoleId(request.getRoleId());
         user.setIsActive(true);
 
-        return userService.createUser(user);
+        return userService.createUser(request);
     }
 
     // 🔹 UPDATE USER
@@ -77,7 +77,7 @@ public class UserController {
         user.setPasswordHash(request.getPassword());
         user.setFirstName(request.getFirstName());
         user.setLastName(request.getLastName());
-        user.setRole(role);
+        user.setRoleId(request.getRoleId());
         user.setIsActive(true);
 
         return userService.updateUser(id, user);

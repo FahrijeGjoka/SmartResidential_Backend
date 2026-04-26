@@ -34,7 +34,7 @@ public class JwtServiceImpl implements JwtService {
                 .claim("schemaName", schemaName)
                 .claim("identifier", identifier)
                 .claim("userId", user.getId())
-                .claim("roleName", user.getRole().getName())
+                .claim("roleName", user.getRoleId())
                 .setIssuedAt(new Date())
                 .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(getSigningKey())
