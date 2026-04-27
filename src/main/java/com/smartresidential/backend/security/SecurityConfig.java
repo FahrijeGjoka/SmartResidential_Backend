@@ -39,6 +39,7 @@ public class SecurityConfig {
                                 "/api/ai/**",
                                 "/api/apartments/**",
                                 "/api/work-logs/**",
+                                "/api/attachments/**",
 
 
 
