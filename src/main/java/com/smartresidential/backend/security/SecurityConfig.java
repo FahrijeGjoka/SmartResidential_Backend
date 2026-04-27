@@ -40,6 +40,7 @@ public class SecurityConfig {
                                 "/api/apartments/**",
                                 "/api/work-logs/**",
                                 "/api/attachments/**",
+                                "/api/maintenance-requests/**",
 
 
 
