@@ -68,80 +68,60 @@ public class AuthServiceImpl implements AuthService {
     public void register(RegisterRequest request) {
         validateRegisterRequest(request);
 
-        Tenant tenant = tenantRepository.findByIdentifier(request.getIdentifier().trim())
-                .orElseThrow(() -> new RuntimeException("Tenant not found."));
+        Tenant tenant = getTenantFromContext();
+        setTenantSchema(tenant.getSchemaName());
 
-        if (Boolean.FALSE.equals(tenant.getIsActive())) {
-            throw new RuntimeException("Tenant is inactive.");
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        if (userRepository.existsByEmail(normalizedEmail)) {
+            throw new RuntimeException("Email already exists.");
         }
 
-        TenantContext.set(
-                tenant.getId(),
-                tenant.getSchemaName(),
-                tenant.getIdentifier(),
-                null,
-                null
+        Role defaultRole = roleRepository.findByName(DEFAULT_ROLE_NAME)
+                .orElseThrow(() -> new RuntimeException("Default role not found: " + DEFAULT_ROLE_NAME));
+
+        User user = new User();
+
+        String fullName = request.getFullName().trim();
+        String[] names = fullName.split("\\s+", 2);
+
+        user.setFirstName(names[0]);
+        user.setLastName(names.length > 1 ? names[1] : "");
+        user.setEmail(normalizedEmail);
+        user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setIsActive(false);
+        user.setRoleId(defaultRole.getId());
+
+        User savedUser = userRepository.save(user);
+
+        String tokenValue = UUID.randomUUID().toString();
+
+        VerificationToken verificationToken = new VerificationToken();
+        verificationToken.setToken(tokenValue);
+        verificationToken.setUser(savedUser);
+        verificationToken.setExpiryDate(LocalDateTime.now().plusHours(24));
+        verificationToken.setUsed(false);
+
+        verificationTokenRepository.save(verificationToken);
+
+        String verificationLink =
+                "http://localhost:8080/api/auth/verify?identifier="
+                        + tenant.getIdentifier()
+                        + "&token="
+                        + tokenValue;
+
+        emailService.sendEmail(
+                savedUser.getEmail(),
+                "Verify your email",
+                "Click the link to verify your account: " + verificationLink
         );
-
-        try {
-            setTenantSchema(tenant.getSchemaName());
-
-            String normalizedEmail = request.getEmail().trim().toLowerCase();
-
-            if (userRepository.existsByEmail(normalizedEmail)) {
-                throw new RuntimeException("Email already exists.");
-            }
-
-            Role defaultRole = roleRepository.findByName(DEFAULT_ROLE_NAME)
-                    .orElseThrow(() -> new RuntimeException("Default role not found: " + DEFAULT_ROLE_NAME));
-
-            User user = new User();
-
-            String fullName = request.getFullName().trim();
-            String[] names = fullName.split("\\s+", 2);
-
-            user.setFirstName(names[0]);
-            user.setLastName(names.length > 1 ? names[1] : "");
-            user.setEmail(normalizedEmail);
-            user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-            user.setIsActive(false);
-            user.setRoleId(defaultRole.getId());
-
-            User savedUser = userRepository.save(user);
-
-            String tokenValue = UUID.randomUUID().toString();
-
-            VerificationToken verificationToken = new VerificationToken();
-            verificationToken.setToken(tokenValue);
-            verificationToken.setUser(savedUser);
-            verificationToken.setExpiryDate(LocalDateTime.now().plusHours(24));
-            verificationToken.setUsed(false);
-
-            verificationTokenRepository.save(verificationToken);
-
-            String verificationLink =
-                    "http://localhost:8080/api/auth/verify?identifier="
-                            + tenant.getIdentifier()
-                            + "&token="
-                            + tokenValue;
-
-            emailService.sendEmail(
-                    savedUser.getEmail(),
-                    "Verify your email",
-                    "Click the link to verify your account: " + verificationLink
-            );
-
-        } finally {
-            TenantContext.clear();
-            resetSchema();
-        }
     }
 
     @Override
     @Transactional
     public void verifyEmail(String identifier, String token) {
         if (identifier == null || identifier.isBlank()) {
-            throw new IllegalArgumentException("Identifier is required.");
+            throw new IllegalArgumentException("Tenant identifier is required.");
         }
 
         if (token == null || token.isBlank()) {
@@ -155,39 +135,25 @@ public class AuthServiceImpl implements AuthService {
             throw new RuntimeException("Tenant is inactive.");
         }
 
-        TenantContext.set(
-                tenant.getId(),
-                tenant.getSchemaName(),
-                tenant.getIdentifier(),
-                null,
-                null
-        );
+        setTenantSchema(tenant.getSchemaName());
 
-        try {
-            setTenantSchema(tenant.getSchemaName());
+        VerificationToken verificationToken = verificationTokenRepository.findByToken(token.trim())
+                .orElseThrow(() -> new RuntimeException("Invalid verification token."));
 
-            VerificationToken verificationToken = verificationTokenRepository.findByToken(token.trim())
-                    .orElseThrow(() -> new RuntimeException("Invalid verification token."));
-
-            if (verificationToken.isUsed()) {
-                throw new RuntimeException("Verification token has already been used.");
-            }
-
-            if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-                throw new RuntimeException("Verification token has expired.");
-            }
-
-            User user = verificationToken.getUser();
-            user.setIsActive(true);
-            userRepository.save(user);
-
-            verificationToken.setUsed(true);
-            verificationTokenRepository.save(verificationToken);
-
-        } finally {
-            TenantContext.clear();
-            resetSchema();
+        if (verificationToken.isUsed()) {
+            throw new RuntimeException("Verification token has already been used.");
         }
+
+        if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
+            throw new RuntimeException("Verification token has expired.");
+        }
+
+        User user = verificationToken.getUser();
+        user.setIsActive(true);
+        userRepository.save(user);
+
+        verificationToken.setUsed(true);
+        verificationTokenRepository.save(verificationToken);
     }
 
     @Override
@@ -195,61 +161,57 @@ public class AuthServiceImpl implements AuthService {
     public LoginResponse login(LoginRequest request) {
         validateLoginRequest(request);
 
-        Tenant tenant = tenantRepository.findByIdentifier(request.getIdentifier().trim())
+        Tenant tenant = getTenantFromContext();
+        setTenantSchema(tenant.getSchemaName());
+
+        String normalizedEmail = request.getEmail().trim().toLowerCase();
+
+        User user = userRepository.findByEmail(normalizedEmail)
+                .orElseThrow(() -> new RuntimeException("Invalid email or password."));
+
+        if (Boolean.FALSE.equals(user.getIsActive())) {
+            throw new RuntimeException("Please verify your email before logging in.");
+        }
+
+        authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(
+                        normalizedEmail,
+                        request.getPassword()
+                )
+        );
+
+        Role role = roleRepository.findById(user.getRoleId())
+                .orElseThrow(() -> new RuntimeException("Role not found"));
+
+        String jwtToken = jwtService.generateToken(
+                user,
+                tenant.getId(),
+                tenant.getSchemaName(),
+                tenant.getIdentifier()
+        );
+
+        return new LoginResponse(
+                jwtToken,
+                user.getEmail(),
+                role.getName()
+        );
+    }
+
+    private Tenant getTenantFromContext() {
+        String tenantIdentifier = TenantContext.getIdentifier();
+
+        if (tenantIdentifier == null || tenantIdentifier.isBlank()) {
+            throw new RuntimeException("Tenant identifier is required in X-Tenant-Identifier header.");
+        }
+
+        Tenant tenant = tenantRepository.findByIdentifier(tenantIdentifier.trim())
                 .orElseThrow(() -> new RuntimeException("Tenant not found."));
 
         if (Boolean.FALSE.equals(tenant.getIsActive())) {
             throw new RuntimeException("Tenant is inactive.");
         }
 
-        TenantContext.set(
-                tenant.getId(),
-                tenant.getSchemaName(),
-                tenant.getIdentifier(),
-                null,
-                null
-        );
-
-        try {
-            setTenantSchema(tenant.getSchemaName());
-
-            String normalizedEmail = request.getEmail().trim().toLowerCase();
-
-            User user = userRepository.findByEmail(normalizedEmail)
-                    .orElseThrow(() -> new RuntimeException("Invalid email or password."));
-
-            if (Boolean.FALSE.equals(user.getIsActive())) {
-                throw new RuntimeException("Please verify your email before logging in.");
-            }
-
-            authenticationManager.authenticate(
-                    new UsernamePasswordAuthenticationToken(
-                            normalizedEmail,
-                            request.getPassword()
-                    )
-            );
-
-            Role role = roleRepository.findById(user.getRoleId())
-                    .orElseThrow(() -> new RuntimeException("Role not found"));
-
-            String jwtToken = jwtService.generateToken(
-                    user,
-                    tenant.getId(),
-                    tenant.getSchemaName(),
-                    tenant.getIdentifier()
-            );
-
-            return new LoginResponse(
-                    jwtToken,
-                    user.getEmail(),
-                    role.getName(),
-                    tenant.getIdentifier()
-            );
-
-        } finally {
-            TenantContext.clear();
-            resetSchema();
-        }
+        return tenant;
     }
 
     private void setTenantSchema(String schemaName) {
@@ -258,19 +220,9 @@ public class AuthServiceImpl implements AuthService {
         ).executeUpdate();
     }
 
-    private void resetSchema() {
-        entityManager.createNativeQuery(
-                "SET search_path TO public"
-        ).executeUpdate();
-    }
-
     private void validateRegisterRequest(RegisterRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Request must not be null.");
-        }
-
-        if (request.getIdentifier() == null || request.getIdentifier().isBlank()) {
-            throw new IllegalArgumentException("Tenant identifier is required.");
         }
 
         if (request.getFullName() == null || request.getFullName().isBlank()) {
@@ -289,10 +241,6 @@ public class AuthServiceImpl implements AuthService {
     private void validateLoginRequest(LoginRequest request) {
         if (request == null) {
             throw new IllegalArgumentException("Request must not be null.");
-        }
-
-        if (request.getIdentifier() == null || request.getIdentifier().isBlank()) {
-            throw new IllegalArgumentException("Tenant identifier is required.");
         }
 
         if (request.getEmail() == null || request.getEmail().isBlank()) {

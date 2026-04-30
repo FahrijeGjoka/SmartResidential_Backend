@@ -17,6 +17,7 @@
 
 	<properties>
 		<java.version>17</java.version>
+		<mockito.version>5.17.0</mockito.version>
 	</properties>
 
 	<dependencies>
@@ -118,6 +119,16 @@
 				<artifactId>spring-boot-maven-plugin</artifactId>
 			</plugin>
 
+			<plugin>
+				<groupId>org.apache.maven.plugins</groupId>
+				<artifactId>maven-surefire-plugin</artifactId>
+				<version>3.2.5</version>
+				<configuration>
+					<argLine>
+						-javaagent:${settings.localRepository}/org/mockito/mockito-core/${mockito.version}/mockito-core-${mockito.version}.jar
+					</argLine>
+				</configuration>
+			</plugin>
 		</plugins>
 	</build>
 
