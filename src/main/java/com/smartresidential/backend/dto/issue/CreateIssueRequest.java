@@ -4,31 +4,47 @@ public class CreateIssueRequest {
 
     private String title;
     private String description;
-    private String status;
     private String priority;
     private Long apartmentId;
-    private Long createdById;
     private Long categoryId;
 
-    public String getTitle() { return title; }
-    public void setTitle(String title) { this.title = title; }
+    public String getTitle() {
+        return title;
+    }
 
-    public String getDescription() { return description; }
-    public void setDescription(String description) { this.description = description; }
+    public void setTitle(String title) {
+        this.title = title;
+    }
 
-    public String getStatus() { return status; }
-    public void setStatus(String status) { this.status = status; }
+    public String getDescription() {
+        return description;
+    }
 
-    public String getPriority() { return priority; }
-    public void setPriority(String priority) { this.priority = priority; }
+    public void setDescription(String description) {
+        this.description = description;
+    }
 
-    public Long getApartmentId() { return apartmentId; }
-    public void setApartmentId(Long apartmentId) { this.apartmentId = apartmentId; }
+    public String getPriority() {
+        return priority;
+    }
 
-    public Long getCreatedById() { return createdById; }
-    public void setCreatedById(Long createdById) { this.createdById = createdById; }
+    public void setPriority(String priority) {
+        this.priority = priority;
+    }
 
-    public Long getCategoryId() { return categoryId; }
-    public void setCategoryId(Long categoryId) { this.categoryId = categoryId; }
+    public Long getApartmentId() {
+        return apartmentId;
+    }
+
+    public void setApartmentId(Long apartmentId) {
+        this.apartmentId = apartmentId;
+    }
+
+    public Long getCategoryId() {
+        return categoryId;
+    }
+
+    public void setCategoryId(Long categoryId) {
+        this.categoryId = categoryId;
+    }
 }
- 

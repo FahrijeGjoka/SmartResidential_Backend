@@ -32,5 +32,5 @@ public interface IssueService {
 
     IssueResponseDTO assignTechnician(Long issueId, Long technicianId);
 
-    IssueResponseDTO changeStatus(Long issueId, String newStatus, Long changedByUserId);
+    IssueResponseDTO changeStatus(Long issueId, String newStatus);
 }

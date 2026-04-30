@@ -9,6 +9,7 @@ import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.IssueStatusHistory;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
@@ -37,14 +38,20 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     public IssueResponseDTO createIssue(CreateIssueRequest request) {
+        Long loggedInUserId = TenantContext.getUserId();
+
+        if (loggedInUserId == null) {
+            throw new RuntimeException("Authenticated user is required.");
+        }
+
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
                 .orElseThrow(() -> new EntityNotFoundException(
                         "Apartment not found with id: " + request.getApartmentId()
                 ));
 
-        User createdBy = userRepository.findById(request.getCreatedById())
+        User createdBy = userRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new EntityNotFoundException(
-                        "User not found with id: " + request.getCreatedById()
+                        "User not found with id: " + loggedInUserId
                 ));
 
         IssueCategory category = null;
@@ -58,7 +65,7 @@ public class IssueServiceImpl implements IssueService {
         Issue issue = new Issue();
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
-        issue.setStatus(request.getStatus());
+        issue.setStatus("OPEN");
         issue.setPriority(request.getPriority());
         issue.setApartment(apartment);
         issue.setCreatedBy(createdBy);
@@ -201,12 +208,18 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
-    public IssueResponseDTO changeStatus(Long issueId, String newStatus, Long changedByUserId) {
+    public IssueResponseDTO changeStatus(Long issueId, String newStatus) {
+        Long loggedInUserId = TenantContext.getUserId();
+
+        if (loggedInUserId == null) {
+            throw new RuntimeException("Authenticated user is required.");
+        }
+
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + issueId));
 
-        User changedBy = userRepository.findById(changedByUserId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + changedByUserId));
+        User changedBy = userRepository.findById(loggedInUserId)
+                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + loggedInUserId));
 
         String oldStatus = issue.getStatus();
         issue.setStatus(newStatus);
