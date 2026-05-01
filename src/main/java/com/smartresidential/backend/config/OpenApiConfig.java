@@ -10,19 +10,19 @@ import org.springframework.context.annotation.Configuration;
 @Configuration
 public class OpenApiConfig {
 
+    private static final String TENANT_HEADER = "X-Tenant-Identifier";
+
     @Bean
     public OpenAPI customOpenAPI() {
-        final String tenantHeader = "X-Tenant-Identifier";
-
         return new OpenAPI()
                 .components(new Components()
-                        .addSecuritySchemes(tenantHeader,
+                        .addSecuritySchemes(TENANT_HEADER,
                                 new SecurityScheme()
                                         .type(SecurityScheme.Type.APIKEY)
                                         .in(SecurityScheme.In.HEADER)
-                                        .name(tenantHeader)
+                                        .name(TENANT_HEADER)
                         )
                 )
-                .addSecurityItem(new SecurityRequirement().addList(tenantHeader));
+                .addSecurityItem(new SecurityRequirement().addList(TENANT_HEADER));
     }
 }

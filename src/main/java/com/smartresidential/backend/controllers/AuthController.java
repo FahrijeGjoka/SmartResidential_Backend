@@ -19,9 +19,7 @@ public class AuthController {
 
     @PostMapping("/signup")
     public ResponseEntity<String> signup(@RequestBody RegisterRequest request) {
-
         authService.register(request);
-
         return ResponseEntity.ok("Registration successful. Please check your email to verify your account.");
     }
 
@@ -30,17 +28,13 @@ public class AuthController {
             @RequestParam String identifier,
             @RequestParam String token
     ) {
-
         authService.verifyEmail(identifier, token);
-
         return ResponseEntity.ok("Email verified successfully.");
     }
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
-
         LoginResponse response = authService.login(request);
-
         return ResponseEntity.ok(response);
     }
 }
