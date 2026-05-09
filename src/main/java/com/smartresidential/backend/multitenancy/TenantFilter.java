@@ -50,8 +50,8 @@ public class TenantFilter extends OncePerRequestFilter {
                         tenant.getId(),
                         tenant.getSchemaName(),
                         tenant.getIdentifier(),
-                        null,
-                        null
+                        TenantContext.getUserId(),
+                        TenantContext.getRoleName()
                 );
             }
 

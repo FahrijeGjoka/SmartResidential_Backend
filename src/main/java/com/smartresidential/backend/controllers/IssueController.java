@@ -9,6 +9,7 @@ import com.smartresidential.backend.services.interfaces.IssueService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,12 +21,14 @@ public class IssueController {
 
     private final IssueService issueService;
 
+    @PreAuthorize("hasAnyAuthority('ROLE_RESIDENT', 'ROLE_STAFF', 'ROLE_ADMIN')")
     @PostMapping
     public ResponseEntity<IssueResponseDTO> createIssue(@RequestBody CreateIssueRequest request) {
         return ResponseEntity.status(HttpStatus.CREATED)
                 .body(issueService.createIssue(request));
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
     @GetMapping
     public ResponseEntity<List<IssueResponseDTO>> getAllIssues(
             @RequestParam(required = false) String status,
@@ -62,11 +65,13 @@ public class IssueController {
         return ResponseEntity.ok(issueService.getAllIssues());
     }
 
+    @PreAuthorize("isAuthenticated()")
     @GetMapping("/{id}")
     public ResponseEntity<IssueResponseDTO> getIssueById(@PathVariable Long id) {
         return ResponseEntity.ok(issueService.getIssueById(id));
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
     @PutMapping("/{id}")
     public ResponseEntity<IssueResponseDTO> updateIssue(
             @PathVariable Long id,
@@ -75,26 +80,25 @@ public class IssueController {
         return ResponseEntity.ok(issueService.updateIssue(id, request));
     }
 
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> deleteIssue(@PathVariable Long id) {
         issueService.deleteIssue(id);
         return ResponseEntity.noContent().build();
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF', 'ROLE_TECHNICIAN')")
     @PatchMapping("/{id}/status")
     public ResponseEntity<IssueResponseDTO> changeStatus(
             @PathVariable Long id,
             @RequestBody CreateIssueStatusHistoryRequest request
     ) {
         return ResponseEntity.ok(
-                issueService.changeStatus(
-                        id,
-                        request.getNewStatus(),
-                        request.getChangedByUserId()
-                )
+                issueService.changeStatus(id, request.getNewStatus())
         );
     }
 
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
     @PostMapping("/{id}/assign")
     public ResponseEntity<IssueResponseDTO> assignTechnician(
             @PathVariable Long id,
