@@ -1,4 +1,4 @@
 package com.smartresidential.backend.jobs;
 
-public class NotificationCleanUpJob {
+public class NotificationCleanupJob {
 }

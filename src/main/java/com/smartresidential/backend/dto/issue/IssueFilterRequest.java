@@ -1,36 +1,46 @@
 package com.smartresidential.backend.dto.issue;
 
 import com.smartresidential.backend.dto.common.BaseFilterRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 public class IssueFilterRequest extends BaseFilterRequest {
 
-    private Long createdByUserId;
+    private Long createdById;
 
     private Long apartmentId;
 
     private Long categoryId;
 
+    private Long assignedTechnicianId;
+
     private String status;
 
     private String priority;
 
+    private String keyword;
+
     private String title;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdBefore;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime updatedAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime updatedBefore;
 
-    public Long getCreatedByUserId() {
-        return createdByUserId;
+    public Long getCreatedById() {
+        return createdById;
     }
 
-    public void setCreatedByUserId(Long createdByUserId) {
-        this.createdByUserId = createdByUserId;
+    public void setCreatedById(Long createdById) {
+        this.createdById = createdById;
     }
 
     public Long getApartmentId() {
@@ -49,6 +59,14 @@ public class IssueFilterRequest extends BaseFilterRequest {
         this.categoryId = categoryId;
     }
 
+    public Long getAssignedTechnicianId() {
+        return assignedTechnicianId;
+    }
+
+    public void setAssignedTechnicianId(Long assignedTechnicianId) {
+        this.assignedTechnicianId = assignedTechnicianId;
+    }
+
     public String getStatus() {
         return status;
     }
@@ -63,6 +81,14 @@ public class IssueFilterRequest extends BaseFilterRequest {
 
     public void setPriority(String priority) {
         this.priority = priority;
+    }
+
+    public String getKeyword() {
+        return keyword;
+    }
+
+    public void setKeyword(String keyword) {
+        this.keyword = keyword;
     }
 
     public String getTitle() {

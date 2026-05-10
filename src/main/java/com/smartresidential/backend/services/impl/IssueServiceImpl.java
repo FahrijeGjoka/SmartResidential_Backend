@@ -1,6 +1,7 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.issue.CreateIssueRequest;
+import com.smartresidential.backend.dto.issue.IssueFilterRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
 import com.smartresidential.backend.dto.issue.UpdateIssueRequest;
 import com.smartresidential.backend.entities.Apartment;
@@ -17,17 +18,34 @@ import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.IssueStatusHistoryRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.IssueService;
+import com.smartresidential.backend.specifications.IssueSpecification;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.Set;
 
 @Service
 @RequiredArgsConstructor
 @Transactional
 public class IssueServiceImpl implements IssueService {
+
+    private static final int DEFAULT_PAGE = 0;
+    private static final int DEFAULT_SIZE = 20;
+    private static final int MAX_PAGE_SIZE = 100;
+    private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
+            "id",
+            "title",
+            "status",
+            "priority",
+            "createdAt",
+            "updatedAt"
+    );
 
     private final IssueRepository issueRepository;
     private final IssueCategoryRepository issueCategoryRepository;
@@ -124,6 +142,13 @@ public class IssueServiceImpl implements IssueService {
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<IssueResponseDTO> searchIssues(IssueFilterRequest filter) {
+        return issueRepository.findAll(IssueSpecification.withFilters(filter), buildPageRequest(filter))
+                .map(this::mapToResponse);
     }
 
     @Override
@@ -249,5 +274,25 @@ public class IssueServiceImpl implements IssueService {
         response.setCreatedAt(issue.getCreatedAt());
         response.setUpdatedAt(issue.getUpdatedAt());
         return response;
+    }
+
+    private PageRequest buildPageRequest(IssueFilterRequest filter) {
+        int page = filter != null && filter.getPage() != null && filter.getPage() >= 0
+                ? filter.getPage()
+                : DEFAULT_PAGE;
+
+        int size = filter != null && filter.getSize() != null && filter.getSize() > 0
+                ? Math.min(filter.getSize(), MAX_PAGE_SIZE)
+                : DEFAULT_SIZE;
+
+        String sortBy = filter != null && ALLOWED_SORT_FIELDS.contains(filter.getSortBy())
+                ? filter.getSortBy()
+                : "createdAt";
+
+        Sort.Direction direction = filter != null && "asc".equalsIgnoreCase(filter.getSortDirection())
+                ? Sort.Direction.ASC
+                : Sort.Direction.DESC;
+
+        return PageRequest.of(page, size, Sort.by(direction, sortBy));
     }
 }
