@@ -6,6 +6,9 @@ import com.smartresidential.backend.dto.building.UpdateBuildingRequest;
 import com.smartresidential.backend.entities.Building;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.services.interfaces.BuildingService;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +24,10 @@ public class BuildingServiceImpl implements BuildingService {
     }
 
     @Override
+    @CacheEvict(
+            cacheNames = "buildings",
+            key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
+    )
     public BuildingResponseDTO createBuilding(CreateBuildingRequest request) {
         Building building = new Building();
         building.setName(request.getName());
@@ -31,6 +38,10 @@ public class BuildingServiceImpl implements BuildingService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = "buildings",
+            key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('buildings', #id)"
+    )
     public BuildingResponseDTO getBuildingById(Long id) {
         Building building = buildingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
@@ -39,6 +50,10 @@ public class BuildingServiceImpl implements BuildingService {
     }
 
     @Override
+    @Cacheable(
+            cacheNames = "buildings",
+            key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
+    )
     public List<BuildingResponseDTO> getAllBuildings() {
         return buildingRepository.findAll()
                 .stream()
@@ -47,6 +62,16 @@ public class BuildingServiceImpl implements BuildingService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = "buildings",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
+            ),
+            @CacheEvict(
+                    cacheNames = "buildings",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('buildings', #id)"
+            )
+    })
     public BuildingResponseDTO updateBuilding(Long id, UpdateBuildingRequest request) {
         Building building = buildingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
@@ -59,6 +84,16 @@ public class BuildingServiceImpl implements BuildingService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = "buildings",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
+            ),
+            @CacheEvict(
+                    cacheNames = "buildings",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('buildings', #id)"
+            )
+    })
     public void deleteBuilding(Long id) {
         Building building = buildingRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
