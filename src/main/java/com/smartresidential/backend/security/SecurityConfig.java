@@ -1,5 +1,7 @@
 package com.smartresidential.backend.security;
 
+import com.smartresidential.backend.middleware.JwtAuthenticationFilter;
+import com.smartresidential.backend.middleware.LoggingMiddleware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -20,9 +22,14 @@ import org.springframework.security.web.authentication.UsernamePasswordAuthentic
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
+    private final LoggingMiddleware loggingMiddleware;
 
-    public SecurityConfig(JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            LoggingMiddleware loggingMiddleware
+    ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
+        this.loggingMiddleware = loggingMiddleware;
     }
 
     @Bean
@@ -45,12 +52,16 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/**",
                                 "/api/tenants/**",
+                                "/api/ai/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
                 )
                 .authenticationProvider(authenticationProvider)
+                // JWT filter
                 .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
+                // Logging middleware
+                .addFilterAfter(loggingMiddleware, JwtAuthenticationFilter.class)
                 .httpBasic(httpBasic -> httpBasic.disable());
 
         return http.build();

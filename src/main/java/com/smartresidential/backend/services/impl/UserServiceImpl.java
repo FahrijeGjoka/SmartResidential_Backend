@@ -176,4 +176,32 @@ public class UserServiceImpl implements UserService {
     public boolean existsByEmail(String email) {
         return userRepository.existsByEmail(email);
     }
+
+    @Override
+    public User assignStaffRole(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        Role role = roleRepository.findByName("ROLE_STAFF")
+                .orElseThrow(() -> new RuntimeException("Role not found: ROLE_STAFF"));
+
+        user.setRoleId(role.getId());
+
+        return userRepository.save(user);
+    }
+
+    @Override
+    public User assignTechnicianRole(Long userId) {
+
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+
+        Role role = roleRepository.findByName("ROLE_TECHNICIAN")
+                .orElseThrow(() -> new RuntimeException("Role not found: ROLE_TECHNICIAN"));
+
+        user.setRoleId(role.getId());
+
+        return userRepository.save(user);
+    }
 }

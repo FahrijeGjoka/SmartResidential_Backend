@@ -1,9 +1,11 @@
 package com.smartresidential.backend.controllers;
+
 import com.smartresidential.backend.dto.user.CreateUserRequest;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.services.interfaces.RoleService;
 import com.smartresidential.backend.services.interfaces.UserService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -20,32 +22,27 @@ public class UserController {
         this.roleService = roleService;
     }
 
-    // 🔹 GET ALL USERS
     @GetMapping
     public List<User> getAllUsers() {
         return userService.getAllUsers();
     }
 
-    // 🔹 GET ONLY ACTIVE USERS
     @GetMapping("/active")
     public List<User> getActiveUsers() {
         return userService.getAllActiveUsers();
     }
 
-    // 🔹 GET USER BY ID
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
                 .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
-    // 🔹 GET USERS BY ROLE
     @GetMapping("/role/{roleId}")
     public List<User> getUsersByRole(@PathVariable Long roleId) {
         return userService.getUsersByRoleId(roleId);
     }
 
-    // 🔹 CREATE USER
     @PostMapping
     public User createUser(@RequestBody CreateUserRequest request) {
 
@@ -65,7 +62,6 @@ public class UserController {
         return userService.createUser(request);
     }
 
-    // 🔹 UPDATE USER
     @PutMapping("/{id}")
     public User updateUser(@PathVariable Long id, @RequestBody CreateUserRequest request) {
 
@@ -83,21 +79,32 @@ public class UserController {
         return userService.updateUser(id, user);
     }
 
-    // 🔹 DELETE USER
     @DeleteMapping("/{id}")
     public void deleteUser(@PathVariable Long id) {
         userService.deleteUser(id);
     }
 
-    // 🔹 DEACTIVATE USER
     @PatchMapping("/{id}/deactivate")
     public User deactivateUser(@PathVariable Long id) {
         return userService.deactivateUser(id);
     }
 
-    // 🔹 ACTIVATE USER
     @PatchMapping("/{id}/activate")
     public User activateUser(@PathVariable Long id) {
         return userService.activateUser(id);
+    }
+
+    // ADMIN -> STAFF
+    @PatchMapping("/{id}/make-staff")
+    @PreAuthorize("hasRole('ADMIN')")
+    public User makeStaff(@PathVariable Long id) {
+        return userService.assignStaffRole(id);
+    }
+
+    // ADMIN or STAFF -> TECHNICIAN
+    @PatchMapping("/{id}/make-technician")
+    @PreAuthorize("hasAnyRole('ADMIN', 'STAFF')")
+    public User makeTechnician(@PathVariable Long id) {
+        return userService.assignTechnicianRole(id);
     }
 }

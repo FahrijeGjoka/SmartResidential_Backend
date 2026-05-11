@@ -4,7 +4,6 @@ import com.smartresidential.backend.dto.issueCategory.CreateIssueCategoryRequest
 import com.smartresidential.backend.dto.issueCategory.IssueCategoryResponseDTO;
 import com.smartresidential.backend.dto.issueCategory.UpdateIssueCategoryRequest;
 import com.smartresidential.backend.services.interfaces.IssueCategoryService;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -13,10 +12,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/issue-categories")
-@RequiredArgsConstructor
 public class IssueCategoryController {
 
     private final IssueCategoryService issueCategoryService;
+
+    public IssueCategoryController(IssueCategoryService issueCategoryService) {
+        this.issueCategoryService = issueCategoryService;
+    }
 
     @PostMapping
     public ResponseEntity<IssueCategoryResponseDTO> createCategory(

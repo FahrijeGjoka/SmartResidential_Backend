@@ -1,8 +1,10 @@
 package com.smartresidential.backend.services.interfaces;
 
 import com.smartresidential.backend.dto.issue.CreateIssueRequest;
+import com.smartresidential.backend.dto.issue.IssueFilterRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
 import com.smartresidential.backend.dto.issue.UpdateIssueRequest;
+import org.springframework.data.domain.Page;
 
 import java.util.List;
 
@@ -15,6 +17,8 @@ public interface IssueService {
     IssueResponseDTO getIssueById(Long id);
 
     List<IssueResponseDTO> getAllIssues();
+
+    Page<IssueResponseDTO> searchIssues(IssueFilterRequest filter);
 
     void deleteIssue(Long id);
 

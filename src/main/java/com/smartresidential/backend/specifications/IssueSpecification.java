@@ -2,12 +2,14 @@ package com.smartresidential.backend.specifications;
 
 import com.smartresidential.backend.dto.issue.IssueFilterRequest;
 import com.smartresidential.backend.entities.Issue;
+import com.smartresidential.backend.entities.IssueAssignment;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.util.ArrayList;
 import java.util.List;
-
-import jakarta.persistence.criteria.Predicate;
 
 public class IssueSpecification {
 
@@ -19,66 +21,72 @@ public class IssueSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 CREATED BY USER
-            // =========================
-            if (filter.getCreatedByUserId() != null) {
+            if (filter == null) {
+                return cb.conjunction();
+            }
+
+            if (filter.getCreatedById() != null) {
                 predicates.add(
-                        cb.equal(root.get("createdBy").get("id"), filter.getCreatedByUserId())
+                        cb.equal(root.get("createdBy").get("id"), filter.getCreatedById())
                 );
             }
 
-            // =========================
-            // 🔥 APARTMENT FILTER
-            // =========================
             if (filter.getApartmentId() != null) {
                 predicates.add(
                         cb.equal(root.get("apartment").get("id"), filter.getApartmentId())
                 );
             }
 
-            // =========================
-            // 🔥 CATEGORY FILTER
-            // =========================
             if (filter.getCategoryId() != null) {
                 predicates.add(
                         cb.equal(root.get("category").get("id"), filter.getCategoryId())
                 );
             }
 
-            // =========================
-            // 🔥 STATUS FILTER
-            // =========================
-            if (filter.getStatus() != null && !filter.getStatus().isEmpty()) {
+            if (filter.getAssignedTechnicianId() != null) {
+                Subquery<Long> assignmentSubquery = query.subquery(Long.class);
+                Root<IssueAssignment> assignmentRoot = assignmentSubquery.from(IssueAssignment.class);
+
+                assignmentSubquery.select(assignmentRoot.get("issue").get("id"))
+                        .where(
+                                cb.equal(assignmentRoot.get("issue").get("id"), root.get("id")),
+                                cb.equal(assignmentRoot.get("technician").get("id"), filter.getAssignedTechnicianId())
+                        );
+
+                predicates.add(cb.exists(assignmentSubquery));
+            }
+
+            if (hasText(filter.getStatus())) {
                 predicates.add(
                         cb.equal(root.get("status"), filter.getStatus())
                 );
             }
 
-            // =========================
-            // 🔥 PRIORITY FILTER
-            // =========================
-            if (filter.getPriority() != null && !filter.getPriority().isEmpty()) {
+            if (hasText(filter.getPriority())) {
                 predicates.add(
                         cb.equal(root.get("priority"), filter.getPriority())
                 );
             }
 
-            // =========================
-            // 🔥 TITLE SEARCH
-            // =========================
-            if (filter.getTitle() != null && !filter.getTitle().isEmpty()) {
+            if (hasText(filter.getKeyword())) {
+                String keyword = "%" + filter.getKeyword().trim().toLowerCase() + "%";
                 predicates.add(
-                        cb.like(
-                                cb.lower(root.get("title")),
-                                "%" + filter.getTitle().toLowerCase() + "%"
+                        cb.or(
+                                cb.like(cb.lower(root.get("title")), keyword),
+                                cb.like(cb.lower(root.get("description")), keyword)
                         )
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
+            if (hasText(filter.getTitle())) {
+                predicates.add(
+                        cb.like(
+                                cb.lower(root.get("title")),
+                                "%" + filter.getTitle().trim().toLowerCase() + "%"
+                        )
+                );
+            }
+
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),
@@ -95,9 +103,6 @@ public class IssueSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 UPDATED AT RANGE
-            // =========================
             if (filter.getUpdatedAfter() != null && filter.getUpdatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("updatedAt"),
@@ -116,5 +121,9 @@ public class IssueSpecification {
 
             return cb.and(predicates.toArray(new Predicate[0]));
         };
+    }
+
+    private static boolean hasText(String value) {
+        return value != null && !value.isBlank();
     }
 }
