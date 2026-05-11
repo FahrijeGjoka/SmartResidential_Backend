@@ -9,6 +9,7 @@ import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.IssueStatusHistory;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.IssueAssignmentRepository;
@@ -18,9 +19,11 @@ import com.smartresidential.backend.repositories.IssueStatusHistoryRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.IssueService;
 import jakarta.persistence.EntityNotFoundException;
+
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
 
 import java.util.List;
 
@@ -35,6 +38,7 @@ public class IssueServiceImpl implements IssueService {
     private final UserRepository userRepository;
     private final IssueAssignmentRepository issueAssignmentRepository;
     private final IssueStatusHistoryRepository issueStatusHistoryRepository;
+    private final NotificationJob notificationJob;
 
     @Override
     public IssueResponseDTO createIssue(CreateIssueRequest request) {
@@ -72,6 +76,7 @@ public class IssueServiceImpl implements IssueService {
         issue.setCategory(category);
 
         Issue savedIssue = issueRepository.save(issue);
+        notificationJob.notifyIssueCreated(savedIssue.getId());
         return mapToResponse(savedIssue);
     }
 
@@ -203,7 +208,7 @@ public class IssueServiceImpl implements IssueService {
 
         issue.setStatus("ASSIGNED");
         Issue updatedIssue = issueRepository.save(issue);
-
+        notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId);
         return mapToResponse(updatedIssue);
     }
 
@@ -232,7 +237,7 @@ public class IssueServiceImpl implements IssueService {
         history.setNewStatus(newStatus);
         history.setChangedBy(changedBy);
         issueStatusHistoryRepository.save(history);
-
+        notificationJob.notifyIssueStatusChanged(updatedIssue.getId(), newStatus);
         return mapToResponse(updatedIssue);
     }
 

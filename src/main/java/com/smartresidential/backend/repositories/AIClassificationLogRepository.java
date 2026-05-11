@@ -4,6 +4,7 @@ import com.smartresidential.backend.entities.AIClassificationLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Repository
@@ -14,4 +15,7 @@ public interface AIClassificationLogRepository extends JpaRepository<AIClassific
     List<AIClassificationLog> findByPredictedCategory(String predictedCategory);
 
     List<AIClassificationLog> findByPredictedPriority(String predictedPriority);
+
+    void deleteByCreatedAtBefore(LocalDateTime dateTime);
 }
+
