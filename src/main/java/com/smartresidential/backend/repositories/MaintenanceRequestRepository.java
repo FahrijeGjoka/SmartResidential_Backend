@@ -15,4 +15,6 @@ public interface MaintenanceRequestRepository extends BaseRepository<Maintenance
     List<MaintenanceRequest> findByRequestedBy_Id(Long requestedById);
 
     List<MaintenanceRequest> findByRequestedAt(LocalDateTime requestedAt);
+
+    List<MaintenanceRequest> findByRequestedAtBefore(LocalDateTime dateTime);
 }

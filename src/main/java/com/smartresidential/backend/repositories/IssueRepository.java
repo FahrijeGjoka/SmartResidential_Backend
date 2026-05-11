@@ -2,6 +2,7 @@ package com.smartresidential.backend.repositories;
 
 import com.smartresidential.backend.entities.Issue;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 public interface IssueRepository extends BaseRepository<Issue, Long> {
@@ -17,4 +18,6 @@ public interface IssueRepository extends BaseRepository<Issue, Long> {
     List<Issue> findByCreatedById(Long userId);
 
     List<Issue> findByTitleContainingIgnoreCase(String title);
+
+    List<Issue> findByStatusInAndCreatedAtBefore(List<String> statuses, LocalDateTime dateTime);
 }
