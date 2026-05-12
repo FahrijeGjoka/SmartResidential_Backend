@@ -1,4 +1,4 @@
-package com.smartresidential.backend.security;
+package com.smartresidential.backend.middleware;
 
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.multitenancy.TenantContext;

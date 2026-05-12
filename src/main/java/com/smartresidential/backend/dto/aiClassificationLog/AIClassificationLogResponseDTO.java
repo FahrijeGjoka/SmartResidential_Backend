@@ -1,7 +1,6 @@
 package com.smartresidential.backend.dto.aiClassificationLog;
 
 public class AIClassificationLogResponseDTO {
-
     private Long id;
     private Long issueId;
     private String rawInput;
@@ -9,63 +8,31 @@ public class AIClassificationLogResponseDTO {
     private String predictedPriority;
     private Double confidenceScore;
     private String createdAt;
+    private String suggestedTechnician;
 
-    public AIClassificationLogResponseDTO() {
-    }
+    public AIClassificationLogResponseDTO() {}
 
-    public Long getId() {
-        return id;
-    }
+    public Long getId() { return id; }
+    public void setId(Long id) { this.id = id; }
 
-    public void setId(Long id) {
-        this.id = id;
-    }
+    public Long getIssueId() { return issueId; }
+    public void setIssueId(Long issueId) { this.issueId = issueId; }
 
-    public Long getIssueId() {
-        return issueId;
-    }
+    public String getRawInput() { return rawInput; }
+    public void setRawInput(String rawInput) { this.rawInput = rawInput; }
 
-    public void setIssueId(Long issueId) {
-        this.issueId = issueId;
-    }
+    public String getPredictedCategory() { return predictedCategory; }
+    public void setPredictedCategory(String predictedCategory) { this.predictedCategory = predictedCategory; }
 
-    public String getRawInput() {
-        return rawInput;
-    }
+    public String getPredictedPriority() { return predictedPriority; }
+    public void setPredictedPriority(String predictedPriority) { this.predictedPriority = predictedPriority; }
 
-    public void setRawInput(String rawInput) {
-        this.rawInput = rawInput;
-    }
+    public Double getConfidenceScore() { return confidenceScore; }
+    public void setConfidenceScore(Double confidenceScore) { this.confidenceScore = confidenceScore; }
 
-    public String getPredictedCategory() {
-        return predictedCategory;
-    }
+    public String getCreatedAt() { return createdAt; }
+    public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
 
-    public void setPredictedCategory(String predictedCategory) {
-        this.predictedCategory = predictedCategory;
-    }
-
-    public String getPredictedPriority() {
-        return predictedPriority;
-    }
-
-    public void setPredictedPriority(String predictedPriority) {
-        this.predictedPriority = predictedPriority;
-    }
-
-    public Double getConfidenceScore() {
-        return confidenceScore;
-    }
-
-    public void setConfidenceScore(Double confidenceScore) {
-        this.confidenceScore = confidenceScore;
-    }
-
-    public String getCreatedAt() {
-        return createdAt;
-    }
-
-    public void setCreatedAt(String createdAt) {
-        this.createdAt = createdAt;
-    }
+    public String getSuggestedTechnician() { return suggestedTechnician; }
+    public void setSuggestedTechnician(String suggestedTechnician) { this.suggestedTechnician = suggestedTechnician; }
 }

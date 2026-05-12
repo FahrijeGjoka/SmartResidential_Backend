@@ -1,12 +1,15 @@
 package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.dto.issue.CreateIssueRequest;
+import com.smartresidential.backend.dto.issue.IssueFilterRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
 import com.smartresidential.backend.dto.issue.UpdateIssueRequest;
 import com.smartresidential.backend.dto.issueAssignment.CreateIssueAssignmentRequest;
 import com.smartresidential.backend.dto.issueStatusHistory.CreateIssueStatusHistoryRequest;
 import com.smartresidential.backend.services.interfaces.IssueService;
-import lombok.RequiredArgsConstructor;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -16,10 +19,13 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/issues")
-@RequiredArgsConstructor
 public class IssueController {
 
     private final IssueService issueService;
+
+    public IssueController(IssueService issueService) {
+        this.issueService = issueService;
+    }
 
     @PreAuthorize("hasAnyAuthority('ROLE_RESIDENT', 'ROLE_STAFF', 'ROLE_ADMIN')")
     @PostMapping
@@ -63,6 +69,18 @@ public class IssueController {
         }
 
         return ResponseEntity.ok(issueService.getAllIssues());
+    }
+
+    @Operation(
+            summary = "Search and filter issues",
+            description = "Supports combined issue filters, keyword search, assigned technician filtering, pagination, and sorting."
+    )
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
+    @GetMapping("/search")
+    public ResponseEntity<Page<IssueResponseDTO>> searchIssues(
+            @ParameterObject @ModelAttribute IssueFilterRequest filter
+    ) {
+        return ResponseEntity.ok(issueService.searchIssues(filter));
     }
 
     @PreAuthorize("isAuthenticated()")

@@ -31,4 +31,8 @@ public interface UserService {
     User deactivateUser(Long id);
 
     boolean existsByEmail(String email);
+
+    User assignStaffRole(Long userId);
+
+    User assignTechnicianRole(Long userId);
 }
