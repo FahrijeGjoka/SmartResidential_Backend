@@ -8,6 +8,9 @@ import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.services.interfaces.IssueCategoryService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -21,6 +24,10 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     private final IssueCategoryRepository issueCategoryRepository;
 
     @Override
+    @CacheEvict(
+            cacheNames = "issueCategories",
+            key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
+    )
     public IssueCategoryResponseDTO createCategory(CreateIssueCategoryRequest request) {
         if (issueCategoryRepository.existsByName(request.getName())) {
             throw new IllegalArgumentException("Issue category with this name already exists.");
@@ -35,6 +42,16 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = "issueCategories",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
+            ),
+            @CacheEvict(
+                    cacheNames = "issueCategories",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('issue-categories', #id)"
+            )
+    })
     public IssueCategoryResponseDTO updateCategory(Long id, UpdateIssueCategoryRequest request) {
         IssueCategory category = issueCategoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Issue category not found with id: " + id));
@@ -56,6 +73,10 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = "issueCategories",
+            key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('issue-categories', #id)"
+    )
     public IssueCategoryResponseDTO getCategoryById(Long id) {
         IssueCategory category = issueCategoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Issue category not found with id: " + id));
@@ -65,6 +86,10 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = "issueCategories",
+            key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
+    )
     public List<IssueCategoryResponseDTO> getAllCategories() {
         return issueCategoryRepository.findAll()
                 .stream()
@@ -73,6 +98,16 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     }
 
     @Override
+    @Caching(evict = {
+            @CacheEvict(
+                    cacheNames = "issueCategories",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
+            ),
+            @CacheEvict(
+                    cacheNames = "issueCategories",
+                    key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('issue-categories', #id)"
+            )
+    })
     public void deleteCategory(Long id) {
         IssueCategory category = issueCategoryRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Issue category not found with id: " + id));
