@@ -13,6 +13,7 @@ import java.util.Optional;
 public class SessionServiceImpl implements SessionService {
 
     private final SessionRepository sessionRepository;
+    private static final String BEARER_PREFIX = "Bearer ";
 
     public SessionServiceImpl(SessionRepository sessionRepository) {
         this.sessionRepository = sessionRepository;
@@ -35,7 +36,7 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public Optional<Session> getSessionByToken(String token) {
-        return sessionRepository.findByToken(token);
+        return sessionRepository.findByToken(cleanToken(token));
     }
 
     @Override
@@ -65,16 +66,18 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public List<Session> getSessionsByToken(String token) {
-        Session session = sessionRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Session not found with token: " + token));
+        String cleanedToken = cleanToken(token);
+        Session session = sessionRepository.findByToken(cleanedToken)
+                .orElseThrow(() -> new RuntimeException("Session not found with token: " + cleanedToken));
 
         return sessionRepository.findAllByUserId(session.getUser().getId());
     }
 
     @Override
     public void logoutAllByToken(String token) {
-        Session session = sessionRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Session not found with token: " + token));
+        String cleanedToken = cleanToken(token);
+        Session session = sessionRepository.findByToken(cleanedToken)
+                .orElseThrow(() -> new RuntimeException("Session not found with token: " + cleanedToken));
 
         Long userId = session.getUser().getId();
 
@@ -90,14 +93,32 @@ public class SessionServiceImpl implements SessionService {
 
     @Override
     public void logout(String token) {
-        Session session = sessionRepository.findByToken(token)
-                .orElseThrow(() -> new RuntimeException("Session not found with token: " + token));
+        String cleanedToken = cleanToken(token);
+        Session session = sessionRepository.findByToken(cleanedToken)
+                .orElseThrow(() -> new RuntimeException("Session not found with token: " + cleanedToken));
 
         sessionRepository.delete(session);
     }
 
     @Override
     public boolean isSessionValid(String token) {
-        return sessionRepository.findByTokenAndExpiresAtAfter(token, LocalDateTime.now()).isPresent();
+        return sessionRepository.findByTokenAndExpiresAtAfter(cleanToken(token), LocalDateTime.now()).isPresent();
+    }
+
+    private String cleanToken(String token) {
+        if (token == null || token.trim().isEmpty()) {
+            throw new IllegalArgumentException("Authorization token is required");
+        }
+
+        String cleanedToken = token.trim();
+        if (cleanedToken.regionMatches(true, 0, BEARER_PREFIX, 0, BEARER_PREFIX.length())) {
+            cleanedToken = cleanedToken.substring(BEARER_PREFIX.length()).trim();
+        }
+
+        if (cleanedToken.isEmpty()) {
+            throw new IllegalArgumentException("Authorization token is required");
+        }
+
+        return cleanedToken;
     }
 }
