@@ -5,6 +5,8 @@ import com.smartresidential.backend.dto.workLog.WorkLogResponseDTO;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.entities.WorkLog;
+import com.smartresidential.backend.exceptions.BadRequestException;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.repositories.WorkLogRepository;
@@ -36,13 +38,13 @@ public class WorkLogServiceImpl implements WorkLogService {
     public WorkLogResponseDTO createWorkLog(CreateWorkLogRequest request) {
 
         User technician = userRepository.findById(request.getTechnicianId())
-                .orElseThrow(() -> new IllegalArgumentException("Technician not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Technician not found"));
 
         Issue issue = issueRepository.findById(request.getIssueId())
-                .orElseThrow(() -> new IllegalArgumentException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         if (request.getEndTime().isBefore(request.getStartTime())) {
-            throw new IllegalArgumentException("End time cannot be before start time");
+            throw new BadRequestException("End time cannot be before start time");
         }
 
         Duration duration = Duration.between(request.getStartTime(), request.getEndTime());
@@ -62,7 +64,7 @@ public class WorkLogServiceImpl implements WorkLogService {
     @Override
     public WorkLogResponseDTO getWorkLogById(Long id) {
         WorkLog workLog = workLogRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Work log not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Work log not found"));
 
         return convertToResponseDTO(workLog);
     }
@@ -94,7 +96,7 @@ public class WorkLogServiceImpl implements WorkLogService {
     @Override
     public void deleteWorkLog(Long id) {
         if (!workLogRepository.existsById(id)) {
-            throw new IllegalArgumentException("Work log not found");
+            throw new ResourceNotFoundException("Work log not found");
         }
 
         workLogRepository.deleteById(id);

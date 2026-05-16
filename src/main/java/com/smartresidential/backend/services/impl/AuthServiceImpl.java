@@ -8,6 +8,11 @@ import com.smartresidential.backend.entities.Session;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.entities.VerificationToken;
+import com.smartresidential.backend.exceptions.BadRequestException;
+import com.smartresidential.backend.exceptions.ConflictException;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
+import com.smartresidential.backend.exceptions.TenantNotFoundException;
+import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.SessionRepository;
@@ -80,11 +85,11 @@ public class AuthServiceImpl implements AuthService {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
         if (userRepository.existsByEmail(normalizedEmail)) {
-            throw new RuntimeException("Email already exists.");
+            throw new ConflictException("Email already exists.");
         }
 
         Role defaultRole = roleRepository.findByName(DEFAULT_ROLE_NAME)
-                .orElseThrow(() -> new RuntimeException("Default role not found: " + DEFAULT_ROLE_NAME));
+                .orElseThrow(() -> new ResourceNotFoundException("Default role not found: " + DEFAULT_ROLE_NAME));
 
         User user = new User();
 
@@ -127,31 +132,31 @@ public class AuthServiceImpl implements AuthService {
     @Transactional
     public void verifyEmail(String identifier, String token) {
         if (identifier == null || identifier.isBlank()) {
-            throw new IllegalArgumentException("Tenant identifier is required.");
+            throw new BadRequestException("Tenant identifier is required.");
         }
 
         if (token == null || token.isBlank()) {
-            throw new IllegalArgumentException("Verification token is required.");
+            throw new BadRequestException("Verification token is required.");
         }
 
         Tenant tenant = tenantRepository.findByIdentifier(identifier.trim())
-                .orElseThrow(() -> new RuntimeException("Tenant not found."));
+                .orElseThrow(() -> new TenantNotFoundException("Tenant not found."));
 
         if (Boolean.FALSE.equals(tenant.getIsActive())) {
-            throw new RuntimeException("Tenant is inactive.");
+            throw new BadRequestException("Tenant is inactive.");
         }
 
         setTenantSchema(tenant.getSchemaName());
 
         VerificationToken verificationToken = verificationTokenRepository.findByToken(token.trim())
-                .orElseThrow(() -> new RuntimeException("Invalid verification token."));
+                .orElseThrow(() -> new BadRequestException("Invalid verification token."));
 
         if (verificationToken.isUsed()) {
-            throw new RuntimeException("Verification token has already been used.");
+            throw new ConflictException("Verification token has already been used.");
         }
 
         if (verificationToken.getExpiryDate().isBefore(LocalDateTime.now())) {
-            throw new RuntimeException("Verification token has expired.");
+            throw new BadRequestException("Verification token has expired.");
         }
 
         User user = verificationToken.getUser();
@@ -173,10 +178,10 @@ public class AuthServiceImpl implements AuthService {
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
         User user = userRepository.findByEmail(normalizedEmail)
-                .orElseThrow(() -> new RuntimeException("Invalid email or password."));
+                .orElseThrow(() -> new UnauthorizedException("Invalid email or password."));
 
         if (Boolean.FALSE.equals(user.getIsActive())) {
-            throw new RuntimeException("Please verify your email before logging in.");
+            throw new UnauthorizedException("Please verify your email before logging in.");
         }
 
         authenticationManager.authenticate(
@@ -187,7 +192,7 @@ public class AuthServiceImpl implements AuthService {
         );
 
         Role role = roleRepository.findById(user.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         String jwtToken = jwtService.generateToken(
                 user,
@@ -223,14 +228,14 @@ public class AuthServiceImpl implements AuthService {
         String tenantIdentifier = TenantContext.getIdentifier();
 
         if (tenantIdentifier == null || tenantIdentifier.isBlank()) {
-            throw new RuntimeException("Tenant identifier is required in X-Tenant-Identifier header.");
+            throw new BadRequestException("Tenant identifier is required in X-Tenant-Identifier header.");
         }
 
         Tenant tenant = tenantRepository.findByIdentifier(tenantIdentifier.trim())
-                .orElseThrow(() -> new RuntimeException("Tenant not found."));
+                .orElseThrow(() -> new TenantNotFoundException("Tenant not found."));
 
         if (Boolean.FALSE.equals(tenant.getIsActive())) {
-            throw new RuntimeException("Tenant is inactive.");
+            throw new BadRequestException("Tenant is inactive.");
         }
 
         return tenant;
@@ -244,33 +249,33 @@ public class AuthServiceImpl implements AuthService {
 
     private void validateRegisterRequest(RegisterRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("Request must not be null.");
+            throw new BadRequestException("Request must not be null.");
         }
 
         if (request.getFullName() == null || request.getFullName().isBlank()) {
-            throw new IllegalArgumentException("Full name is required.");
+            throw new BadRequestException("Full name is required.");
         }
 
         if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email is required.");
+            throw new BadRequestException("Email is required.");
         }
 
         if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Password is required.");
+            throw new BadRequestException("Password is required.");
         }
     }
 
     private void validateLoginRequest(LoginRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("Request must not be null.");
+            throw new BadRequestException("Request must not be null.");
         }
 
         if (request.getEmail() == null || request.getEmail().isBlank()) {
-            throw new IllegalArgumentException("Email is required.");
+            throw new BadRequestException("Email is required.");
         }
 
         if (request.getPassword() == null || request.getPassword().isBlank()) {
-            throw new IllegalArgumentException("Password is required.");
+            throw new BadRequestException("Password is required.");
         }
     }
 }

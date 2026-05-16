@@ -6,6 +6,7 @@ import com.smartresidential.backend.dto.residentProfile.UpdateResidentProfileReq
 import com.smartresidential.backend.entities.Apartment;
 import com.smartresidential.backend.entities.ResidentProfile;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
@@ -33,10 +34,10 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
     @Override
     public ResidentProfileResponseDTO createResidentProfile(CreateResidentProfileRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
 
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
-                .orElseThrow(() -> new RuntimeException("Apartment not found with id: " + request.getApartmentId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Apartment not found with id: " + request.getApartmentId()));
 
         ResidentProfile residentProfile = new ResidentProfile();
         residentProfile.setUser(user);
@@ -50,7 +51,7 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
     @Override
     public ResidentProfileResponseDTO getResidentProfileById(Long id) {
         ResidentProfile residentProfile = residentProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ResidentProfile not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("ResidentProfile not found with id: " + id));
 
         return mapToDTO(residentProfile);
     }
@@ -74,13 +75,13 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
     @Override
     public ResidentProfileResponseDTO updateResidentProfile(Long id, UpdateResidentProfileRequest request) {
         ResidentProfile residentProfile = residentProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ResidentProfile not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("ResidentProfile not found with id: " + id));
 
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
 
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
-                .orElseThrow(() -> new RuntimeException("Apartment not found with id: " + request.getApartmentId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Apartment not found with id: " + request.getApartmentId()));
 
         residentProfile.setUser(user);
         residentProfile.setApartment(apartment);
@@ -93,7 +94,7 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
     @Override
     public void deleteResidentProfile(Long id) {
         ResidentProfile residentProfile = residentProfileRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("ResidentProfile not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("ResidentProfile not found with id: " + id));
 
         residentProfileRepository.delete(residentProfile);
     }

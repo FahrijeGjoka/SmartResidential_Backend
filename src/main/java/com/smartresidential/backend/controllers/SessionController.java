@@ -1,6 +1,7 @@
 package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.entities.Session;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.services.interfaces.SessionService;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -30,7 +31,7 @@ public class SessionController {
     public ResponseEntity<Session> getSessionById(@PathVariable Long id) {
         return ResponseEntity.ok(
                 sessionService.getSessionById(id)
-                        .orElseThrow(() -> new RuntimeException("Session not found"))
+                        .orElseThrow(() -> new ResourceNotFoundException("Session not found"))
         );
     }
 

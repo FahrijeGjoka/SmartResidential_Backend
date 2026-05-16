@@ -5,9 +5,10 @@ import com.smartresidential.backend.dto.issueCategory.CreateIssueCategoryRequest
 import com.smartresidential.backend.dto.issueCategory.IssueCategoryResponseDTO;
 import com.smartresidential.backend.dto.issueCategory.UpdateIssueCategoryRequest;
 import com.smartresidential.backend.entities.IssueCategory;
+import com.smartresidential.backend.exceptions.ConflictException;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.services.interfaces.IssueCategoryService;
-import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
@@ -31,7 +32,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     )
     public IssueCategoryResponseDTO createCategory(CreateIssueCategoryRequest request) {
         if (issueCategoryRepository.existsByName(request.getName())) {
-            throw new IllegalArgumentException("Issue category with this name already exists.");
+            throw new ConflictException("Issue category with this name already exists.");
         }
 
         IssueCategory category = new IssueCategory();
@@ -55,11 +56,11 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     })
     public IssueCategoryResponseDTO updateCategory(Long id, UpdateIssueCategoryRequest request) {
         IssueCategory category = issueCategoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Issue category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue category not found with id: " + id));
 
         if (request.getName() != null && !request.getName().equals(category.getName())) {
             if (issueCategoryRepository.existsByName(request.getName())) {
-                throw new IllegalArgumentException("Issue category with this name already exists.");
+                throw new ConflictException("Issue category with this name already exists.");
             }
             category.setName(request.getName());
         }
@@ -80,7 +81,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     )
     public IssueCategoryResponseDTO getCategoryById(Long id) {
         IssueCategory category = issueCategoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Issue category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue category not found with id: " + id));
 
         return mapToResponse(category);
     }
@@ -111,7 +112,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     })
     public void deleteCategory(Long id) {
         IssueCategory category = issueCategoryRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Issue category not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue category not found with id: " + id));
 
         issueCategoryRepository.delete(category);
     }

@@ -3,6 +3,8 @@ package com.smartresidential.backend.services.impl;
 import com.smartresidential.backend.dto.tenant.CreateTenantRequest;
 import com.smartresidential.backend.dto.tenant.CreateTenantResponse;
 import com.smartresidential.backend.entities.Tenant;
+import com.smartresidential.backend.exceptions.BadRequestException;
+import com.smartresidential.backend.exceptions.ConflictException;
 import com.smartresidential.backend.repositories.TenantRepository;
 import org.springframework.stereotype.Service;
 
@@ -26,11 +28,11 @@ public class TenantService {
         String schemaName = request.getSchemaName().trim();
 
         if (tenantRepository.existsByIdentifier(identifier)) {
-            throw new IllegalArgumentException("Tenant identifier already exists.");
+            throw new ConflictException("Tenant identifier already exists.");
         }
 
         if (tenantRepository.existsBySchemaName(schemaName)) {
-            throw new IllegalArgumentException("Schema name already exists.");
+            throw new ConflictException("Schema name already exists.");
         }
 
         Tenant tenant = new Tenant();
@@ -55,19 +57,19 @@ public class TenantService {
 
     private void validateRequest(CreateTenantRequest request) {
         if (request == null) {
-            throw new IllegalArgumentException("Request must not be null.");
+            throw new BadRequestException("Request must not be null.");
         }
 
         if (request.getName() == null || request.getName().isBlank()) {
-            throw new IllegalArgumentException("Tenant name is required.");
+            throw new BadRequestException("Tenant name is required.");
         }
 
         if (request.getIdentifier() == null || request.getIdentifier().isBlank()) {
-            throw new IllegalArgumentException("Tenant identifier is required.");
+            throw new BadRequestException("Tenant identifier is required.");
         }
 
         if (request.getSchemaName() == null || request.getSchemaName().isBlank()) {
-            throw new IllegalArgumentException("Schema name is required.");
+            throw new BadRequestException("Schema name is required.");
         }
     }
 }

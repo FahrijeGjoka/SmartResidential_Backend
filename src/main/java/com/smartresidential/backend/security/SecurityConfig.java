@@ -1,9 +1,13 @@
 package com.smartresidential.backend.security;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.smartresidential.backend.exceptions.ApiErrorResponse;
 import com.smartresidential.backend.middleware.JwtAuthenticationFilter;
 import com.smartresidential.backend.middleware.LoggingMiddleware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -23,13 +27,16 @@ public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
     private final LoggingMiddleware loggingMiddleware;
+    private final ObjectMapper objectMapper;
 
     public SecurityConfig(
             JwtAuthenticationFilter jwtAuthenticationFilter,
-            LoggingMiddleware loggingMiddleware
+            LoggingMiddleware loggingMiddleware,
+            ObjectMapper objectMapper
     ) {
         this.jwtAuthenticationFilter = jwtAuthenticationFilter;
         this.loggingMiddleware = loggingMiddleware;
+        this.objectMapper = objectMapper;
     }
 
     @Bean
@@ -56,6 +63,32 @@ public class SecurityConfig {
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()
+                )
+                .exceptionHandling(exceptionHandling -> exceptionHandling
+                        .authenticationEntryPoint((request, response, authException) -> {
+                            response.setStatus(HttpStatus.UNAUTHORIZED.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write(objectMapper.writeValueAsString(
+                                    ApiErrorResponse.of(
+                                            HttpStatus.UNAUTHORIZED.value(),
+                                            HttpStatus.UNAUTHORIZED.getReasonPhrase(),
+                                            "Authentication is required.",
+                                            request.getRequestURI()
+                                    )
+                            ));
+                        })
+                        .accessDeniedHandler((request, response, accessDeniedException) -> {
+                            response.setStatus(HttpStatus.FORBIDDEN.value());
+                            response.setContentType(MediaType.APPLICATION_JSON_VALUE);
+                            response.getWriter().write(objectMapper.writeValueAsString(
+                                    ApiErrorResponse.of(
+                                            HttpStatus.FORBIDDEN.value(),
+                                            HttpStatus.FORBIDDEN.getReasonPhrase(),
+                                            "Access is denied.",
+                                            request.getRequestURI()
+                                    )
+                            ));
+                        })
                 )
                 .authenticationProvider(authenticationProvider)
                 // JWT filter

@@ -3,6 +3,7 @@ package com.smartresidential.backend.services.impl;
 import com.smartresidential.backend.dto.aiClassificationLog.AIClassificationLogResponseDTO;
 import com.smartresidential.backend.dto.aiClassificationLog.CreateAIClassificationLogRequest;
 import com.smartresidential.backend.entities.*;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.*;
 import com.smartresidential.backend.services.interfaces.AIClassificationLogService;
 import org.springframework.stereotype.Service;
@@ -38,7 +39,7 @@ public class AIClassificationLogServiceImpl implements AIClassificationLogServic
     public AIClassificationLogResponseDTO create(CreateAIClassificationLogRequest request) {
 
         Issue issue = issueRepository.findById(request.getIssueId())
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         // Thirr Ollama-n për klasifikim
         OllamaService.AIClassificationResult aiResult = ollamaService.classifyIssue(request.getRawInput());

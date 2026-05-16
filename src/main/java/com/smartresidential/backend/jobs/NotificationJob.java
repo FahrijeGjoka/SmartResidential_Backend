@@ -3,6 +3,7 @@ package com.smartresidential.backend.jobs;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.Notification;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.NotificationRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
@@ -28,14 +29,14 @@ public class NotificationJob {
     @Transactional
     public void notifyIssueCreated(Long issueId) {
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found with id: " + issueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
         Long adminRoleId = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"))
+                .orElseThrow(() -> new ResourceNotFoundException("ROLE_ADMIN not found"))
                 .getId();
 
         Long staffRoleId = roleRepository.findByName("ROLE_STAFF")
-                .orElseThrow(() -> new RuntimeException("ROLE_STAFF not found"))
+                .orElseThrow(() -> new ResourceNotFoundException("ROLE_STAFF not found"))
                 .getId();
 
         List<User> admins = userRepository.findAllByRoleId(adminRoleId);
@@ -53,10 +54,10 @@ public class NotificationJob {
     @Transactional
     public void notifyTechnicianAssigned(Long issueId, Long technicianId) {
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found with id: " + issueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
         User technician = userRepository.findById(technicianId)
-                .orElseThrow(() -> new RuntimeException("Technician not found with id: " + technicianId));
+                .orElseThrow(() -> new ResourceNotFoundException("Technician not found with id: " + technicianId));
 
         String message = "You have been assigned to issue: " + issue.getTitle();
 
@@ -75,7 +76,7 @@ public class NotificationJob {
     @Transactional
     public void notifyIssueStatusChanged(Long issueId, String newStatus) {
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found with id: " + issueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
         User resident = issue.getCreatedBy();
 
@@ -108,14 +109,14 @@ public class NotificationJob {
     @Transactional
     public void notifyMaintenanceRequestEscalation(Long maintenanceRequestId, Long issueId) {
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new RuntimeException("Issue not found with id: " + issueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
         Long adminRoleId = roleRepository.findByName("ROLE_ADMIN")
-                .orElseThrow(() -> new RuntimeException("ROLE_ADMIN not found"))
+                .orElseThrow(() -> new ResourceNotFoundException("ROLE_ADMIN not found"))
                 .getId();
 
         Long staffRoleId = roleRepository.findByName("ROLE_STAFF")
-                .orElseThrow(() -> new RuntimeException("ROLE_STAFF not found"))
+                .orElseThrow(() -> new ResourceNotFoundException("ROLE_STAFF not found"))
                 .getId();
 
         List<User> admins = userRepository.findAllByRoleId(adminRoleId);
