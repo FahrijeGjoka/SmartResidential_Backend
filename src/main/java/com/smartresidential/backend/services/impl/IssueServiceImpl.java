@@ -10,6 +10,8 @@ import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.IssueStatusHistory;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.cache.CacheNames;
+import com.smartresidential.backend.cache.TenantCacheEvictor;
 import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
@@ -23,6 +25,7 @@ import com.smartresidential.backend.specifications.IssueSpecification;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
@@ -57,6 +60,7 @@ public class IssueServiceImpl implements IssueService {
     private final IssueAssignmentRepository issueAssignmentRepository;
     private final IssueStatusHistoryRepository issueStatusHistoryRepository;
     private final NotificationJob notificationJob;
+    private final TenantCacheEvictor tenantCacheEvictor;
 
     @Override
     public IssueResponseDTO createIssue(CreateIssueRequest request) {
@@ -94,6 +98,7 @@ public class IssueServiceImpl implements IssueService {
         issue.setCategory(category);
 
         Issue savedIssue = issueRepository.save(issue);
+        evictCurrentTenantIssueCache();
         notificationJob.notifyIssueCreated(savedIssue.getId());
         return mapToResponse(savedIssue);
     }
@@ -128,6 +133,7 @@ public class IssueServiceImpl implements IssueService {
         }
 
         Issue updatedIssue = issueRepository.save(issue);
+        evictCurrentTenantIssueCache();
         return mapToResponse(updatedIssue);
     }
 
@@ -142,6 +148,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).all()"
+    )
     public List<IssueResponseDTO> getAllIssues() {
         return issueRepository.findAll()
                 .stream()
@@ -151,6 +161,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).search(#filter)"
+    )
     public Page<IssueResponseDTO> searchIssues(IssueFilterRequest filter) {
         return issueRepository.findAll(IssueSpecification.withFilters(filter), buildPageRequest(filter))
                 .map(this::mapToResponse);
@@ -162,10 +176,15 @@ public class IssueServiceImpl implements IssueService {
                 .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + id));
 
         issueRepository.delete(issue);
+        evictCurrentTenantIssueCache();
     }
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byStatus(#status)"
+    )
     public List<IssueResponseDTO> getIssuesByStatus(String status) {
         return issueRepository.findByStatus(status)
                 .stream()
@@ -175,6 +194,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byPriority(#priority)"
+    )
     public List<IssueResponseDTO> getIssuesByPriority(String priority) {
         return issueRepository.findByPriority(priority)
                 .stream()
@@ -184,6 +207,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byCategory(#categoryId)"
+    )
     public List<IssueResponseDTO> getIssuesByCategory(Long categoryId) {
         return issueRepository.findByCategoryId(categoryId)
                 .stream()
@@ -193,6 +220,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byApartment(#apartmentId)"
+    )
     public List<IssueResponseDTO> getIssuesByApartment(Long apartmentId) {
         return issueRepository.findByApartmentId(apartmentId)
                 .stream()
@@ -202,6 +233,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byCreatedBy(#userId)"
+    )
     public List<IssueResponseDTO> getIssuesByCreatedBy(Long userId) {
         return issueRepository.findByCreatedById(userId)
                 .stream()
@@ -211,6 +246,10 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byTitle(#title)"
+    )
     public List<IssueResponseDTO> searchIssuesByTitle(String title) {
         return issueRepository.findByTitleContainingIgnoreCase(title)
                 .stream()
@@ -233,6 +272,7 @@ public class IssueServiceImpl implements IssueService {
 
         issue.setStatus("ASSIGNED");
         Issue updatedIssue = issueRepository.save(issue);
+        evictCurrentTenantIssueCache();
         notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId);
         return mapToResponse(updatedIssue);
     }
@@ -262,8 +302,13 @@ public class IssueServiceImpl implements IssueService {
         history.setNewStatus(newStatus);
         history.setChangedBy(changedBy);
         issueStatusHistoryRepository.save(history);
+        evictCurrentTenantIssueCache();
         notificationJob.notifyIssueStatusChanged(updatedIssue.getId(), newStatus);
         return mapToResponse(updatedIssue);
+    }
+
+    private void evictCurrentTenantIssueCache() {
+        tenantCacheEvictor.evictCurrentTenant(CacheNames.ISSUES);
     }
 
     private IssueResponseDTO mapToResponse(Issue issue) {
