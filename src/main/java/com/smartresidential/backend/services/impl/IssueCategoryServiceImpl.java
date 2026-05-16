@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.dto.issueCategory.CreateIssueCategoryRequest;
 import com.smartresidential.backend.dto.issueCategory.IssueCategoryResponseDTO;
 import com.smartresidential.backend.dto.issueCategory.UpdateIssueCategoryRequest;
@@ -25,7 +26,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
 
     @Override
     @CacheEvict(
-            cacheNames = "issueCategories",
+            cacheNames = CacheNames.ISSUE_CATEGORIES,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
     )
     public IssueCategoryResponseDTO createCategory(CreateIssueCategoryRequest request) {
@@ -44,11 +45,11 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "issueCategories",
+                    cacheNames = CacheNames.ISSUE_CATEGORIES,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
             ),
             @CacheEvict(
-                    cacheNames = "issueCategories",
+                    cacheNames = CacheNames.ISSUE_CATEGORIES,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('issue-categories', #id)"
             )
     })
@@ -74,7 +75,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "issueCategories",
+            cacheNames = CacheNames.ISSUE_CATEGORIES,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('issue-categories', #id)"
     )
     public IssueCategoryResponseDTO getCategoryById(Long id) {
@@ -87,7 +88,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     @Override
     @Transactional(readOnly = true)
     @Cacheable(
-            cacheNames = "issueCategories",
+            cacheNames = CacheNames.ISSUE_CATEGORIES,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
     )
     public List<IssueCategoryResponseDTO> getAllCategories() {
@@ -100,11 +101,11 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "issueCategories",
+                    cacheNames = CacheNames.ISSUE_CATEGORIES,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('issue-categories')"
             ),
             @CacheEvict(
-                    cacheNames = "issueCategories",
+                    cacheNames = CacheNames.ISSUE_CATEGORIES,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('issue-categories', #id)"
             )
     })

@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.dto.apartment.ApartmentResponseDTO;
 import com.smartresidential.backend.dto.apartment.CreateApartmentRequest;
 import com.smartresidential.backend.dto.apartment.UpdateApartmentRequest;
@@ -36,11 +37,11 @@ public class ApartmentServiceImpl implements ApartmentService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('apartments')"
             ),
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byBuildingId('apartments', #request.buildingId)"
             )
     })
@@ -59,7 +60,7 @@ public class ApartmentServiceImpl implements ApartmentService {
 
     @Override
     @Cacheable(
-            cacheNames = "apartments",
+            cacheNames = CacheNames.APARTMENTS,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('apartments', #id)"
     )
     public ApartmentResponseDTO getApartmentById(Long id) {
@@ -71,7 +72,7 @@ public class ApartmentServiceImpl implements ApartmentService {
 
     @Override
     @Cacheable(
-            cacheNames = "apartments",
+            cacheNames = CacheNames.APARTMENTS,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('apartments')"
     )
     public List<ApartmentResponseDTO> getAllApartments() {
@@ -83,7 +84,7 @@ public class ApartmentServiceImpl implements ApartmentService {
 
     @Override
     @Cacheable(
-            cacheNames = "apartments",
+            cacheNames = CacheNames.APARTMENTS,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byBuildingId('apartments', #buildingId)"
     )
     public List<ApartmentResponseDTO> getApartmentsByBuildingId(Long buildingId) {
@@ -96,15 +97,15 @@ public class ApartmentServiceImpl implements ApartmentService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('apartments')"
             ),
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('apartments', #id)"
             ),
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byBuildingId('apartments', #request.buildingId)"
             )
     })
@@ -128,11 +129,11 @@ public class ApartmentServiceImpl implements ApartmentService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('apartments')"
             ),
             @CacheEvict(
-                    cacheNames = "apartments",
+                    cacheNames = CacheNames.APARTMENTS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('apartments', #id)"
             )
     })
@@ -146,7 +147,7 @@ public class ApartmentServiceImpl implements ApartmentService {
     }
 
     private void evictApartmentsByBuilding(Long buildingId) {
-        Cache cache = cacheManager.getCache("apartments");
+        Cache cache = cacheManager.getCache(CacheNames.APARTMENTS);
         if (cache != null) {
             cache.evict(com.smartresidential.backend.cache.TenantCacheKeys.byBuildingId("apartments", buildingId));
         }
