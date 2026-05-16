@@ -12,10 +12,13 @@ import com.smartresidential.backend.jobs.SessionCleanupJob;
 import com.smartresidential.backend.jobs.VerificationTokenCleanupJob;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.services.interfaces.JobService;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Duration;
@@ -42,6 +45,9 @@ public class JobServiceImpl implements JobService {
     private final Map<String, JobDefinition> jobs = new LinkedHashMap<>();
     private final Map<String, Boolean> enabledJobs = new ConcurrentHashMap<>();
     private final Map<String, CopyOnWriteArrayList<JobExecutionResponse>> history = new ConcurrentHashMap<>();
+
+    @PersistenceContext
+    private EntityManager entityManager;
 
     public JobServiceImpl(
             ObjectProvider<AIClassificationLogCleanupJob> aiClassificationLogCleanupJob,
@@ -128,6 +134,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Transactional
     public JobExecutionResponse runJob(String jobName) {
         JobDefinition job = getJobDefinition(jobName);
         if (job.manualRunner() == null) {
@@ -194,6 +201,7 @@ public class JobServiceImpl implements JobService {
     }
 
     @Override
+    @Transactional
     public void runScheduledJob(String jobName, Runnable jobRunner) {
         JobDefinition job = getJobDefinition(jobName);
         if (!enabledJobs.getOrDefault(job.name(), true)) {
@@ -238,6 +246,7 @@ public class JobServiceImpl implements JobService {
 
         try {
             TenantContext.set(tenantInfo);
+            setSearchPath(tenantInfo.schemaName());
             jobRunner.run();
 
             JobExecutionResponse response = buildExecution(
@@ -280,6 +289,20 @@ public class JobServiceImpl implements JobService {
                 TenantContext.clear();
             }
         }
+    }
+
+    private void setSearchPath(String schemaName) {
+        if (schemaName == null || schemaName.isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Tenant schema is required to run jobs.");
+        }
+
+        entityManager.createNativeQuery(
+                "SET search_path TO " + quoteIdentifier(schemaName)
+        ).executeUpdate();
+    }
+
+    private String quoteIdentifier(String identifier) {
+        return "\"" + identifier.replace("\"", "\"\"") + "\"";
     }
 
     private JobExecutionResponse buildExecution(String jobName,
