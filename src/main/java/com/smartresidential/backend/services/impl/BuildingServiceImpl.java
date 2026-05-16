@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.dto.building.BuildingResponseDTO;
 import com.smartresidential.backend.dto.building.CreateBuildingRequest;
 import com.smartresidential.backend.dto.building.UpdateBuildingRequest;
@@ -25,7 +26,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @CacheEvict(
-            cacheNames = "buildings",
+            cacheNames = CacheNames.BUILDINGS,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
     )
     public BuildingResponseDTO createBuilding(CreateBuildingRequest request) {
@@ -39,7 +40,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @Cacheable(
-            cacheNames = "buildings",
+            cacheNames = CacheNames.BUILDINGS,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('buildings', #id)"
     )
     public BuildingResponseDTO getBuildingById(Long id) {
@@ -51,7 +52,7 @@ public class BuildingServiceImpl implements BuildingService {
 
     @Override
     @Cacheable(
-            cacheNames = "buildings",
+            cacheNames = CacheNames.BUILDINGS,
             key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
     )
     public List<BuildingResponseDTO> getAllBuildings() {
@@ -64,11 +65,11 @@ public class BuildingServiceImpl implements BuildingService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "buildings",
+                    cacheNames = CacheNames.BUILDINGS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
             ),
             @CacheEvict(
-                    cacheNames = "buildings",
+                    cacheNames = CacheNames.BUILDINGS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('buildings', #id)"
             )
     })
@@ -86,11 +87,11 @@ public class BuildingServiceImpl implements BuildingService {
     @Override
     @Caching(evict = {
             @CacheEvict(
-                    cacheNames = "buildings",
+                    cacheNames = CacheNames.BUILDINGS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).all('buildings')"
             ),
             @CacheEvict(
-                    cacheNames = "buildings",
+                    cacheNames = CacheNames.BUILDINGS,
                     key = "T(com.smartresidential.backend.cache.TenantCacheKeys).byId('buildings', #id)"
             )
     })

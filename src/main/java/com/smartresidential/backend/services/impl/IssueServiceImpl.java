@@ -11,6 +11,7 @@ import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.IssueStatusHistory;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.cache.CacheNames;
+import com.smartresidential.backend.cache.TenantCacheEvictor;
 import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
@@ -24,7 +25,6 @@ import com.smartresidential.backend.specifications.IssueSpecification;
 import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
-import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -60,9 +60,9 @@ public class IssueServiceImpl implements IssueService {
     private final IssueAssignmentRepository issueAssignmentRepository;
     private final IssueStatusHistoryRepository issueStatusHistoryRepository;
     private final NotificationJob notificationJob;
+    private final TenantCacheEvictor tenantCacheEvictor;
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.ISSUES, allEntries = true)
     public IssueResponseDTO createIssue(CreateIssueRequest request) {
         Long loggedInUserId = TenantContext.getUserId();
 
@@ -98,12 +98,12 @@ public class IssueServiceImpl implements IssueService {
         issue.setCategory(category);
 
         Issue savedIssue = issueRepository.save(issue);
+        evictCurrentTenantIssueCache();
         notificationJob.notifyIssueCreated(savedIssue.getId());
         return mapToResponse(savedIssue);
     }
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.ISSUES, allEntries = true)
     public IssueResponseDTO updateIssue(Long id, UpdateIssueRequest request) {
         Issue issue = issueRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + id));
@@ -133,6 +133,7 @@ public class IssueServiceImpl implements IssueService {
         }
 
         Issue updatedIssue = issueRepository.save(issue);
+        evictCurrentTenantIssueCache();
         return mapToResponse(updatedIssue);
     }
 
@@ -160,18 +161,22 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
+    @Cacheable(
+            cacheNames = CacheNames.ISSUES,
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).search(#filter)"
+    )
     public Page<IssueResponseDTO> searchIssues(IssueFilterRequest filter) {
         return issueRepository.findAll(IssueSpecification.withFilters(filter), buildPageRequest(filter))
                 .map(this::mapToResponse);
     }
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.ISSUES, allEntries = true)
     public void deleteIssue(Long id) {
         Issue issue = issueRepository.findById(id)
                 .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + id));
 
         issueRepository.delete(issue);
+        evictCurrentTenantIssueCache();
     }
 
     @Override
@@ -253,7 +258,6 @@ public class IssueServiceImpl implements IssueService {
     }
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.ISSUES, allEntries = true)
     public IssueResponseDTO assignTechnician(Long issueId, Long technicianId) {
         Issue issue = issueRepository.findById(issueId)
                 .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + issueId));
@@ -268,12 +272,12 @@ public class IssueServiceImpl implements IssueService {
 
         issue.setStatus("ASSIGNED");
         Issue updatedIssue = issueRepository.save(issue);
+        evictCurrentTenantIssueCache();
         notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId);
         return mapToResponse(updatedIssue);
     }
 
     @Override
-    @CacheEvict(cacheNames = CacheNames.ISSUES, allEntries = true)
     public IssueResponseDTO changeStatus(Long issueId, String newStatus) {
         Long loggedInUserId = TenantContext.getUserId();
 
@@ -298,8 +302,13 @@ public class IssueServiceImpl implements IssueService {
         history.setNewStatus(newStatus);
         history.setChangedBy(changedBy);
         issueStatusHistoryRepository.save(history);
+        evictCurrentTenantIssueCache();
         notificationJob.notifyIssueStatusChanged(updatedIssue.getId(), newStatus);
         return mapToResponse(updatedIssue);
+    }
+
+    private void evictCurrentTenantIssueCache() {
+        tenantCacheEvictor.evictCurrentTenant(CacheNames.ISSUES);
     }
 
     private IssueResponseDTO mapToResponse(Issue issue) {
