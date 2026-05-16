@@ -5,6 +5,8 @@ import com.smartresidential.backend.dto.maintenanceRequest.MaintenanceRequestRes
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.MaintenanceRequest;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ConflictException;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.UserRepository;
@@ -33,13 +35,13 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
     @Override
     public MaintenanceRequestResponseDTO createMaintenanceRequest(CreateMaintenanceRequestRequest request) {
         Issue issue = issueRepository.findById(request.getIssueId())
-                .orElseThrow(() -> new IllegalArgumentException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User user = userRepository.findById(request.getRequestedById())
-                .orElseThrow(() -> new IllegalArgumentException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         if (maintenanceRequestRepository.existsByIssue_Id(request.getIssueId())) {
-            throw new IllegalArgumentException("Maintenance request already exists for this issue");
+            throw new ConflictException("Maintenance request already exists for this issue");
         }
 
         MaintenanceRequest maintenanceRequest = new MaintenanceRequest();
@@ -55,7 +57,7 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
     @Override
     public MaintenanceRequestResponseDTO getMaintenanceRequestById(Long id) {
         MaintenanceRequest maintenanceRequest = maintenanceRequestRepository.findById(id)
-                .orElseThrow(() -> new IllegalArgumentException("Maintenance request not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Maintenance request not found"));
 
         return convertToResponseDTO(maintenanceRequest);
     }

@@ -6,6 +6,7 @@ import com.smartresidential.backend.dto.buildingAnnouncement.UpdateBuildingAnnou
 import com.smartresidential.backend.entities.Building;
 import com.smartresidential.backend.entities.BuildingAnnouncement;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.BuildingAnnouncementRepository;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.repositories.UserRepository;
@@ -33,10 +34,10 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
     @Override
     public BuildingAnnouncementResponseDTO createBuildingAnnouncement(CreateBuildingAnnouncementRequest request) {
         Building building = buildingRepository.findById(request.getBuildingId())
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + request.getBuildingId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
         User createdBy = userRepository.findById(request.getCreatedBy())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getCreatedBy()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getCreatedBy()));
 
         BuildingAnnouncement announcement = new BuildingAnnouncement();
         announcement.setBuilding(building);
@@ -51,7 +52,7 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
     @Override
     public BuildingAnnouncementResponseDTO getBuildingAnnouncementById(Long id) {
         BuildingAnnouncement announcement = buildingAnnouncementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("BuildingAnnouncement not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("BuildingAnnouncement not found with id: " + id));
 
         return mapToDTO(announcement);
     }
@@ -75,13 +76,13 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
     @Override
     public BuildingAnnouncementResponseDTO updateBuildingAnnouncement(Long id, UpdateBuildingAnnouncementRequest request) {
         BuildingAnnouncement announcement = buildingAnnouncementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("BuildingAnnouncement not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("BuildingAnnouncement not found with id: " + id));
 
         Building building = buildingRepository.findById(request.getBuildingId())
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + request.getBuildingId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
         User createdBy = userRepository.findById(request.getCreatedBy())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getCreatedBy()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getCreatedBy()));
 
         announcement.setBuilding(building);
         announcement.setTitle(request.getTitle());
@@ -95,7 +96,7 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
     @Override
     public void deleteBuildingAnnouncement(Long id) {
         BuildingAnnouncement announcement = buildingAnnouncementRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("BuildingAnnouncement not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("BuildingAnnouncement not found with id: " + id));
 
         buildingAnnouncementRepository.delete(announcement);
     }

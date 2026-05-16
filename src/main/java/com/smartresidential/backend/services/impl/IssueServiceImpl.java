@@ -12,6 +12,8 @@ import com.smartresidential.backend.entities.IssueStatusHistory;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.cache.TenantCacheEvictor;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
+import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
@@ -22,7 +24,6 @@ import com.smartresidential.backend.repositories.IssueStatusHistoryRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.IssueService;
 import com.smartresidential.backend.specifications.IssueSpecification;
-import jakarta.persistence.EntityNotFoundException;
 
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.Cacheable;
@@ -67,23 +68,23 @@ public class IssueServiceImpl implements IssueService {
         Long loggedInUserId = TenantContext.getUserId();
 
         if (loggedInUserId == null) {
-            throw new RuntimeException("Authenticated user is required.");
+            throw new UnauthorizedException("Authenticated user is required.");
         }
 
         Apartment apartment = apartmentRepository.findById(request.getApartmentId())
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "Apartment not found with id: " + request.getApartmentId()
                 ));
 
         User createdBy = userRepository.findById(loggedInUserId)
-                .orElseThrow(() -> new EntityNotFoundException(
+                .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with id: " + loggedInUserId
                 ));
 
         IssueCategory category = null;
         if (request.getCategoryId() != null) {
             category = issueCategoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new EntityNotFoundException(
+                    .orElseThrow(() -> new ResourceNotFoundException(
                             "Issue category not found with id: " + request.getCategoryId()
                     ));
         }
@@ -106,7 +107,7 @@ public class IssueServiceImpl implements IssueService {
     @Override
     public IssueResponseDTO updateIssue(Long id, UpdateIssueRequest request) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
         if (request.getTitle() != null) {
             issue.setTitle(request.getTitle());
@@ -126,7 +127,7 @@ public class IssueServiceImpl implements IssueService {
 
         if (request.getCategoryId() != null) {
             IssueCategory category = issueCategoryRepository.findById(request.getCategoryId())
-                    .orElseThrow(() -> new EntityNotFoundException(
+                    .orElseThrow(() -> new ResourceNotFoundException(
                             "Issue category not found with id: " + request.getCategoryId()
                     ));
             issue.setCategory(category);
@@ -141,7 +142,7 @@ public class IssueServiceImpl implements IssueService {
     @Transactional(readOnly = true)
     public IssueResponseDTO getIssueById(Long id) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
         return mapToResponse(issue);
     }
@@ -173,7 +174,7 @@ public class IssueServiceImpl implements IssueService {
     @Override
     public void deleteIssue(Long id) {
         Issue issue = issueRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
         issueRepository.delete(issue);
         evictCurrentTenantIssueCache();
@@ -260,10 +261,10 @@ public class IssueServiceImpl implements IssueService {
     @Override
     public IssueResponseDTO assignTechnician(Long issueId, Long technicianId) {
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + issueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
         User technician = userRepository.findById(technicianId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + technicianId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + technicianId));
 
         IssueAssignment assignment = new IssueAssignment();
         assignment.setIssue(issue);
@@ -282,14 +283,14 @@ public class IssueServiceImpl implements IssueService {
         Long loggedInUserId = TenantContext.getUserId();
 
         if (loggedInUserId == null) {
-            throw new RuntimeException("Authenticated user is required.");
+            throw new UnauthorizedException("Authenticated user is required.");
         }
 
         Issue issue = issueRepository.findById(issueId)
-                .orElseThrow(() -> new EntityNotFoundException("Issue not found with id: " + issueId));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + issueId));
 
         User changedBy = userRepository.findById(loggedInUserId)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with id: " + loggedInUserId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + loggedInUserId));
 
         String oldStatus = issue.getStatus();
         issue.setStatus(newStatus);

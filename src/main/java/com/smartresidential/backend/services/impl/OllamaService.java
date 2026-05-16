@@ -72,7 +72,7 @@ public class OllamaService {
                 return (String) response.getBody().get("response");
             }
         } catch (Exception e) {
-            throw new RuntimeException("Failed to communicate with Ollama: " + e.getMessage());
+            throw new IllegalStateException("Failed to communicate with Ollama: " + e.getMessage(), e);
         }
         return null;
     }

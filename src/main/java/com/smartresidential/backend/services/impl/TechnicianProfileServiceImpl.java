@@ -5,6 +5,7 @@ import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileRespo
 import com.smartresidential.backend.dto.technicianProfile.UpdateTechnicianProfileRequest;
 import com.smartresidential.backend.entities.TechnicianProfile;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.TechnicianProfileService;
@@ -27,7 +28,7 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
     @Override
     public TechnicianProfileResponseDTO create(CreateTechnicianProfileRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         TechnicianProfile profile = new TechnicianProfile();
         profile.setUser(user);
@@ -41,7 +42,7 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
     public TechnicianProfileResponseDTO getByUserId(Long userId) {
         return repository.findByUserId(userId)
                 .map(this::mapToDTO)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
     }
 
     @Override
@@ -59,7 +60,7 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
     @Override
     public TechnicianProfileResponseDTO update(Long id, UpdateTechnicianProfileRequest request) {
         TechnicianProfile profile = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
 
         if (request.getSpecialization() != null)
             profile.setSpecialization(request.getSpecialization());
@@ -73,7 +74,7 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
     @Override
     public void changeAvailability(Long id, Boolean isAvailable) {
         TechnicianProfile profile = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Profile not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
 
         profile.setIsAvailable(isAvailable);
         repository.save(profile);

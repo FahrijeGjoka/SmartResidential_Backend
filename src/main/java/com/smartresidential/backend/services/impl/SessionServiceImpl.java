@@ -1,6 +1,8 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.entities.Session;
+import com.smartresidential.backend.exceptions.BadRequestException;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.services.interfaces.SessionService;
 import org.springframework.stereotype.Service;
@@ -47,7 +49,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public Session updateSession(Long id, Session session) {
         Session existingSession = sessionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Session not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
         existingSession.setUser(session.getUser());
         existingSession.setToken(session.getToken());
@@ -59,7 +61,7 @@ public class SessionServiceImpl implements SessionService {
     @Override
     public void deleteSession(Long id) {
         Session session = sessionRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Session not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with id: " + id));
 
         sessionRepository.delete(session);
     }
@@ -68,7 +70,7 @@ public class SessionServiceImpl implements SessionService {
     public List<Session> getSessionsByToken(String token) {
         String cleanedToken = cleanToken(token);
         Session session = sessionRepository.findByToken(cleanedToken)
-                .orElseThrow(() -> new RuntimeException("Session not found with token: " + cleanedToken));
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with token: " + cleanedToken));
 
         return sessionRepository.findAllByUserId(session.getUser().getId());
     }
@@ -77,7 +79,7 @@ public class SessionServiceImpl implements SessionService {
     public void logoutAllByToken(String token) {
         String cleanedToken = cleanToken(token);
         Session session = sessionRepository.findByToken(cleanedToken)
-                .orElseThrow(() -> new RuntimeException("Session not found with token: " + cleanedToken));
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with token: " + cleanedToken));
 
         Long userId = session.getUser().getId();
 
@@ -95,7 +97,7 @@ public class SessionServiceImpl implements SessionService {
     public void logout(String token) {
         String cleanedToken = cleanToken(token);
         Session session = sessionRepository.findByToken(cleanedToken)
-                .orElseThrow(() -> new RuntimeException("Session not found with token: " + cleanedToken));
+                .orElseThrow(() -> new ResourceNotFoundException("Session not found with token: " + cleanedToken));
 
         sessionRepository.delete(session);
     }
@@ -107,7 +109,7 @@ public class SessionServiceImpl implements SessionService {
 
     private String cleanToken(String token) {
         if (token == null || token.trim().isEmpty()) {
-            throw new IllegalArgumentException("Authorization token is required");
+            throw new BadRequestException("Authorization token is required");
         }
 
         String cleanedToken = token.trim();
@@ -116,7 +118,7 @@ public class SessionServiceImpl implements SessionService {
         }
 
         if (cleanedToken.isEmpty()) {
-            throw new IllegalArgumentException("Authorization token is required");
+            throw new BadRequestException("Authorization token is required");
         }
 
         return cleanedToken;

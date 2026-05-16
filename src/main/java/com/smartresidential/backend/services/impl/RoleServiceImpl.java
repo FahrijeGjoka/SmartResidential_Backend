@@ -1,6 +1,7 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.entities.Role;
+import com.smartresidential.backend.exceptions.ConflictException;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.services.interfaces.RoleService;
 import org.springframework.stereotype.Service;
@@ -35,7 +36,7 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public Role createRole(Role role) {
         if (roleRepository.existsByName(role.getName())) {
-            throw new RuntimeException("Role already exists");
+            throw new ConflictException("Role already exists");
         }
         return roleRepository.save(role);
     }

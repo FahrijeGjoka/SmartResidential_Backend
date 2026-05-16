@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.auth.LoginRequest;
 import com.smartresidential.backend.dto.auth.LoginResponse;
 import com.smartresidential.backend.dto.auth.RegisterRequest;
 import com.smartresidential.backend.services.interfaces.AuthService;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,7 +19,7 @@ public class AuthController {
     }
 
     @PostMapping("/signup")
-    public ResponseEntity<String> signup(@RequestBody RegisterRequest request) {
+    public ResponseEntity<String> signup(@Valid @RequestBody RegisterRequest request) {
         authService.register(request);
         return ResponseEntity.ok("Registration successful. Please check your email to verify your account.");
     }
@@ -33,7 +34,7 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<LoginResponse> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
         LoginResponse response = authService.login(request);
         return ResponseEntity.ok(response);
     }

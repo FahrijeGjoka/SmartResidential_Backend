@@ -3,6 +3,7 @@ package com.smartresidential.backend.services.impl;
 import com.smartresidential.backend.entities.Comment;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.CommentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.UserRepository;
@@ -34,10 +35,10 @@ public class CommentServiceImpl implements CommentService {
     public CommentResponseDTO createComment(CommentRequestDTO dto) {
 
         Issue issue = issueRepository.findById(dto.getIssueId())
-                .orElseThrow(() -> new RuntimeException("Issue not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
         User user = userRepository.findById(dto.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found"));
 
         Comment comment = new Comment();
         comment.setIssue(issue);
@@ -62,7 +63,7 @@ public class CommentServiceImpl implements CommentService {
     @Override
     public void deleteComment(Long id) {
         if (!commentRepository.existsById(id)) {
-            throw new RuntimeException("Comment not found");
+            throw new ResourceNotFoundException("Comment not found");
         }
         commentRepository.deleteById(id);
     }

@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.notification.CreateNotificationRequest;
 import com.smartresidential.backend.dto.notification.NotificationResponseDTO;
 import com.smartresidential.backend.entities.Notification;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.NotificationRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.NotificationService;
@@ -25,7 +26,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public NotificationResponseDTO create(CreateNotificationRequest request) {
         User user = userRepository.findById(request.getUserId())
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + request.getUserId()));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + request.getUserId()));
 
         Notification notification = new Notification();
         notification.setUser(user);
@@ -64,7 +65,7 @@ public class NotificationServiceImpl implements NotificationService {
     @Override
     public void markAsRead(Long id) {
         Notification notification = repository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Notification not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Notification not found with id: " + id));
 
         notification.setIsRead(true);
         repository.save(notification);

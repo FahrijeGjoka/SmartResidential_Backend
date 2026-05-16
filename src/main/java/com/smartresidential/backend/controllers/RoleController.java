@@ -1,4 +1,5 @@
 package com.smartresidential.backend.controllers;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.services.interfaces.RoleService;
 import org.springframework.web.bind.annotation.*;
@@ -24,13 +25,13 @@ public class RoleController {
     @GetMapping("/{id}")
     public Role getRoleById(@PathVariable Long id) {
         return roleService.getRoleById(id)
-                .orElseThrow(() -> new RuntimeException("Role not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found with id: " + id));
     }
 
     @GetMapping("/name/{name}")
     public Role getRoleByName(@PathVariable String name) {
         return roleService.getRoleByName(name)
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
     }
 
     @PostMapping

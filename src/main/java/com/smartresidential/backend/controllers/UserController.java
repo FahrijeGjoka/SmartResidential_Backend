@@ -3,6 +3,7 @@ package com.smartresidential.backend.controllers;
 import com.smartresidential.backend.dto.user.CreateUserRequest;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.services.interfaces.RoleService;
 import com.smartresidential.backend.services.interfaces.UserService;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,7 +36,7 @@ public class UserController {
     @GetMapping("/{id}")
     public User getUserById(@PathVariable Long id) {
         return userService.getUserById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
     }
 
     @GetMapping("/role/{roleId}")
@@ -47,7 +48,7 @@ public class UserController {
     public User createUser(@RequestBody CreateUserRequest request) {
 
         Role role = roleService.getRoleById(request.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         User user = new User();
         user.setEmail(request.getEmail());
@@ -66,7 +67,7 @@ public class UserController {
     public User updateUser(@PathVariable Long id, @RequestBody CreateUserRequest request) {
 
         Role role = roleService.getRoleById(request.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         User user = new User();
         user.setEmail(request.getEmail());

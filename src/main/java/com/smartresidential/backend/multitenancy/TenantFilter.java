@@ -1,6 +1,8 @@
 package com.smartresidential.backend.multitenancy;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartresidential.backend.entities.Tenant;
+import com.smartresidential.backend.exceptions.ApiErrorResponse;
 import com.smartresidential.backend.repositories.TenantRepository;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -20,6 +22,7 @@ public class TenantFilter extends OncePerRequestFilter {
     private static final String TENANT_HEADER = "X-Tenant-Identifier";
 
     private final TenantRepository tenantRepository;
+    private final ObjectMapper objectMapper;
 
     @Override
     protected void doFilterInternal(
@@ -38,11 +41,14 @@ public class TenantFilter extends OncePerRequestFilter {
                 if (tenant == null) {
                     response.setStatus(HttpStatus.BAD_REQUEST.value());
                     response.setContentType("application/json");
-                    response.getWriter().write("""
-                            {
-                              "error": "Invalid tenant identifier"
-                            }
-                            """);
+                    response.getWriter().write(objectMapper.writeValueAsString(
+                            ApiErrorResponse.of(
+                                    HttpStatus.BAD_REQUEST.value(),
+                                    HttpStatus.BAD_REQUEST.getReasonPhrase(),
+                                    "Invalid tenant identifier",
+                                    request.getRequestURI()
+                            )
+                    ));
                     return;
                 }
 

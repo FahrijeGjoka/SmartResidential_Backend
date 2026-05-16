@@ -5,6 +5,7 @@ import com.smartresidential.backend.dto.building.BuildingResponseDTO;
 import com.smartresidential.backend.dto.building.CreateBuildingRequest;
 import com.smartresidential.backend.dto.building.UpdateBuildingRequest;
 import com.smartresidential.backend.entities.Building;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.services.interfaces.BuildingService;
 import org.springframework.cache.annotation.CacheEvict;
@@ -45,7 +46,7 @@ public class BuildingServiceImpl implements BuildingService {
     )
     public BuildingResponseDTO getBuildingById(Long id) {
         Building building = buildingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + id));
 
         return mapToDTO(building);
     }
@@ -75,7 +76,7 @@ public class BuildingServiceImpl implements BuildingService {
     })
     public BuildingResponseDTO updateBuilding(Long id, UpdateBuildingRequest request) {
         Building building = buildingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + id));
 
         building.setName(request.getName());
         building.setAddress(request.getAddress());
@@ -97,7 +98,7 @@ public class BuildingServiceImpl implements BuildingService {
     })
     public void deleteBuilding(Long id) {
         Building building = buildingRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + id));
 
         buildingRepository.delete(building);
     }

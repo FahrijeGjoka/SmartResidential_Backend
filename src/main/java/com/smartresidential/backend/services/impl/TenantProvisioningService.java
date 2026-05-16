@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.exceptions.BadRequestException;
 import org.flywaydb.core.Flyway;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -42,7 +43,7 @@ public class TenantProvisioningService {
 
     private void validateSchemaName(String schemaName) {
         if (schemaName == null || schemaName.isBlank()) {
-            throw new IllegalArgumentException("Schema name must not be null or blank.");
+            throw new BadRequestException("Schema name must not be null or blank.");
         }
     }
 }

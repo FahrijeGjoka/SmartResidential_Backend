@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.attachment.CreateAttachmentRequest;
 import com.smartresidential.backend.dto.attachment.AttachmentResponseDTO;
 import com.smartresidential.backend.entities.Attachment;
 import com.smartresidential.backend.entities.Issue;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.AttachmentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.services.interfaces.AttachmentService;
@@ -26,7 +27,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         // Validate Issue
         Optional<Issue> issueOptional = issueRepository.findById(request.getRelatedEntityId());
         if (!issueOptional.isPresent()) {
-            throw new IllegalArgumentException("Issue not found");
+            throw new ResourceNotFoundException("Issue not found");
         }
 
         // Create Attachment entity
@@ -47,7 +48,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     public AttachmentResponseDTO getAttachmentById(Long id) {
         Optional<Attachment> attachmentOptional = attachmentRepository.findById(id);
         if (!attachmentOptional.isPresent()) {
-            throw new IllegalArgumentException("Attachment not found");
+            throw new ResourceNotFoundException("Attachment not found");
         }
         return convertToResponseDTO(attachmentOptional.get());
     }

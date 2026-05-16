@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.maintenanceRequest.CreateMaintenanceRequ
 import com.smartresidential.backend.dto.maintenanceRequest.MaintenanceRequestResponseDTO;
 import com.smartresidential.backend.services.interfaces.MaintenanceRequestService;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -22,7 +23,7 @@ public class MaintenanceRequestController {
     // ✅ CREATE
     @PostMapping
     public ResponseEntity<MaintenanceRequestResponseDTO> createMaintenanceRequest(
-            @RequestBody CreateMaintenanceRequestRequest request
+            @Valid @RequestBody CreateMaintenanceRequestRequest request
     ) {
         return ResponseEntity.ok(
                 maintenanceRequestService.createMaintenanceRequest(request)

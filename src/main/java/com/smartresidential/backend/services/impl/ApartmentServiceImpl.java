@@ -6,6 +6,7 @@ import com.smartresidential.backend.dto.apartment.CreateApartmentRequest;
 import com.smartresidential.backend.dto.apartment.UpdateApartmentRequest;
 import com.smartresidential.backend.entities.Apartment;
 import com.smartresidential.backend.entities.Building;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.services.interfaces.ApartmentService;
@@ -47,7 +48,7 @@ public class ApartmentServiceImpl implements ApartmentService {
     })
     public ApartmentResponseDTO createApartment(CreateApartmentRequest request) {
         Building building = buildingRepository.findById(request.getBuildingId())
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + request.getBuildingId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
         Apartment apartment = new Apartment();
         apartment.setBuilding(building);
@@ -65,7 +66,7 @@ public class ApartmentServiceImpl implements ApartmentService {
     )
     public ApartmentResponseDTO getApartmentById(Long id) {
         Apartment apartment = apartmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Apartment not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Apartment not found with id: " + id));
 
         return mapToDTO(apartment);
     }
@@ -111,11 +112,11 @@ public class ApartmentServiceImpl implements ApartmentService {
     })
     public ApartmentResponseDTO updateApartment(Long id, UpdateApartmentRequest request) {
         Apartment apartment = apartmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Apartment not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Apartment not found with id: " + id));
         Long previousBuildingId = apartment.getBuilding().getId();
 
         Building building = buildingRepository.findById(request.getBuildingId())
-                .orElseThrow(() -> new RuntimeException("Building not found with id: " + request.getBuildingId()));
+                .orElseThrow(() -> new ResourceNotFoundException("Building not found with id: " + request.getBuildingId()));
 
         apartment.setBuilding(building);
         apartment.setUnitNumber(request.getUnitNumber());
@@ -139,7 +140,7 @@ public class ApartmentServiceImpl implements ApartmentService {
     })
     public void deleteApartment(Long id) {
         Apartment apartment = apartmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Apartment not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Apartment not found with id: " + id));
         Long buildingId = apartment.getBuilding().getId();
 
         apartmentRepository.delete(apartment);

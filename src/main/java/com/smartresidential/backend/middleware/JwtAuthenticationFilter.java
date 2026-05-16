@@ -1,6 +1,8 @@
 package com.smartresidential.backend.middleware;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ApiErrorResponse;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.JwtService;
@@ -30,15 +32,18 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
+    private final ObjectMapper objectMapper;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
             UserDetailsService userDetailsService,
-            UserRepository userRepository
+            UserRepository userRepository,
+            ObjectMapper objectMapper
     ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
+        this.objectMapper = objectMapper;
     }
 
     @Override
@@ -67,13 +72,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
             if (headerIdentifier == null || headerIdentifier.isBlank()) {
                 writeError(response, HttpServletResponse.SC_BAD_REQUEST,
-                        "Missing X-Tenant-Identifier header.");
+                        "Missing X-Tenant-Identifier header.", request.getRequestURI());
                 return;
             }
 
             if (jwtIdentifier == null || !headerIdentifier.trim().equals(jwtIdentifier)) {
                 writeError(response, HttpServletResponse.SC_FORBIDDEN,
-                        "Tenant header does not match JWT tenant.");
+                        "Tenant header does not match JWT tenant.", request.getRequestURI());
                 return;
             }
 
@@ -123,21 +128,27 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
         } catch (JwtException | IllegalArgumentException e) {
             writeError(response, HttpServletResponse.SC_UNAUTHORIZED,
-                    "Invalid or expired JWT token.");
+                    "Invalid or expired JWT token.", request.getRequestURI());
         }
     }
 
     private void writeError(
             HttpServletResponse response,
             int status,
-            String message
+            String message,
+            String path
     ) throws IOException {
         response.setStatus(status);
         response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-        response.getWriter().write("""
-                {
-                  "error": "%s"
-                }
-                """.formatted(message));
+        response.getWriter().write(objectMapper.writeValueAsString(
+                ApiErrorResponse.of(
+                        status,
+                        HttpServletResponse.SC_UNAUTHORIZED == status ? "Unauthorized"
+                                : HttpServletResponse.SC_FORBIDDEN == status ? "Forbidden"
+                                : "Bad Request",
+                        message,
+                        path
+                )
+        ));
     }
 }

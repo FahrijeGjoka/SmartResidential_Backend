@@ -4,6 +4,9 @@ import com.smartresidential.backend.dto.user.CreateUserRequest;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.exceptions.ConflictException;
+import com.smartresidential.backend.exceptions.ResourceNotFoundException;
+import com.smartresidential.backend.exceptions.TenantNotFoundException;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
@@ -47,10 +50,10 @@ public class UserServiceImpl implements UserService {
     public User createUser(CreateUserRequest request) {
 
         Tenant tenant = tenantRepository.findById(request.getTenantId())
-                .orElseThrow(() -> new RuntimeException("Tenant not found"));
+                .orElseThrow(() -> new TenantNotFoundException("Tenant not found"));
 
         Role role = roleRepository.findById(request.getRoleId())
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
         try {
             TenantContext.set(
@@ -67,7 +70,7 @@ public class UserServiceImpl implements UserService {
                     .executeUpdate();
 
             if (userRepository.existsByEmail(request.getEmail())) {
-                throw new RuntimeException("User with this email already exists");
+                throw new ConflictException("User with this email already exists");
             }
 
             User user = new User();
@@ -119,12 +122,12 @@ public class UserServiceImpl implements UserService {
     public User updateUser(Long id, User user) {
 
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         Optional<User> userWithSameEmail = userRepository.findByEmail(user.getEmail());
 
         if (userWithSameEmail.isPresent() && !userWithSameEmail.get().getId().equals(id)) {
-            throw new RuntimeException("Email already in use");
+            throw new ConflictException("Email already in use");
         }
 
         existingUser.setEmail(user.getEmail());
@@ -145,7 +148,7 @@ public class UserServiceImpl implements UserService {
     public void deleteUser(Long id) {
 
         User existingUser = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         userRepository.delete(existingUser);
     }
@@ -154,7 +157,7 @@ public class UserServiceImpl implements UserService {
     public User activateUser(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         user.setIsActive(true);
 
@@ -165,7 +168,7 @@ public class UserServiceImpl implements UserService {
     public User deactivateUser(Long id) {
 
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
 
         user.setIsActive(false);
 
@@ -181,10 +184,10 @@ public class UserServiceImpl implements UserService {
     public User assignStaffRole(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         Role role = roleRepository.findByName("ROLE_STAFF")
-                .orElseThrow(() -> new RuntimeException("Role not found: ROLE_STAFF"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: ROLE_STAFF"));
 
         user.setRoleId(role.getId());
 
@@ -195,10 +198,10 @@ public class UserServiceImpl implements UserService {
     public User assignTechnicianRole(Long userId) {
 
         User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + userId));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
 
         Role role = roleRepository.findByName("ROLE_TECHNICIAN")
-                .orElseThrow(() -> new RuntimeException("Role not found: ROLE_TECHNICIAN"));
+                .orElseThrow(() -> new ResourceNotFoundException("Role not found: ROLE_TECHNICIAN"));
 
         user.setRoleId(role.getId());
 
