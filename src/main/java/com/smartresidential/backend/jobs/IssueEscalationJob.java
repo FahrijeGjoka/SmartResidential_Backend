@@ -2,6 +2,7 @@ package com.smartresidential.backend.jobs;
 
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.repositories.IssueRepository;
+import com.smartresidential.backend.services.interfaces.JobService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -15,10 +16,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class IssueEscalationJob {
 
+    private static final String JOB_NAME = "IssueEscalationJob";
+
     private final IssueRepository issueRepository;
+    private final JobService jobService;
 
     @Scheduled(cron = "0 0 */6 * * *")
     public void escalateOldOpenIssues() {
+        jobService.runScheduledJob(JOB_NAME, this::executeNow);
+    }
+
+    public void executeNow() {
         LocalDateTime limitTime = LocalDateTime.now().minusHours(48);
 
         List<Issue> oldIssues = issueRepository.findByStatusInAndCreatedAtBefore(
