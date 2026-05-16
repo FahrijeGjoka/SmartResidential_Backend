@@ -8,6 +8,8 @@ public class IssueResponseDTO {
     private Long createdById;
     private Long apartmentId;
     private Long categoryId;
+    private Long assignedTechnicianId;
+    private Long assignedTechnicianUserId;
     private String title;
     private String description;
     private String status;
@@ -48,6 +50,22 @@ public class IssueResponseDTO {
 
     public void setCategoryId(Long categoryId) {
         this.categoryId = categoryId;
+    }
+
+    public Long getAssignedTechnicianId() {
+        return assignedTechnicianId;
+    }
+
+    public void setAssignedTechnicianId(Long assignedTechnicianId) {
+        this.assignedTechnicianId = assignedTechnicianId;
+    }
+
+    public Long getAssignedTechnicianUserId() {
+        return assignedTechnicianUserId;
+    }
+
+    public void setAssignedTechnicianUserId(Long assignedTechnicianUserId) {
+        this.assignedTechnicianUserId = assignedTechnicianUserId;
     }
 
     public String getTitle() {

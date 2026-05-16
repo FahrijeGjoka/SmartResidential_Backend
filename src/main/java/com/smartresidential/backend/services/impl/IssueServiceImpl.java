@@ -9,9 +9,11 @@ import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.IssueStatusHistory;
+import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.cache.TenantCacheEvictor;
+import com.smartresidential.backend.exceptions.ConflictException;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.jobs.NotificationJob;
@@ -21,6 +23,8 @@ import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.IssueStatusHistoryRepository;
+import com.smartresidential.backend.repositories.RoleRepository;
+import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.IssueService;
 import com.smartresidential.backend.specifications.IssueSpecification;
@@ -35,6 +39,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 
 @Service
@@ -45,6 +50,8 @@ public class IssueServiceImpl implements IssueService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String ROLE_TECHNICIAN = "ROLE_TECHNICIAN";
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "id",
             "title",
@@ -60,6 +67,8 @@ public class IssueServiceImpl implements IssueService {
     private final UserRepository userRepository;
     private final IssueAssignmentRepository issueAssignmentRepository;
     private final IssueStatusHistoryRepository issueStatusHistoryRepository;
+    private final TechnicianProfileRepository technicianProfileRepository;
+    private final RoleRepository roleRepository;
     private final NotificationJob notificationJob;
     private final TenantCacheEvictor tenantCacheEvictor;
 
@@ -118,7 +127,7 @@ public class IssueServiceImpl implements IssueService {
         }
 
         if (request.getStatus() != null) {
-            issue.setStatus(request.getStatus());
+            updateIssueStatus(issue, request.getStatus());
         }
 
         if (request.getPriority() != null) {
@@ -266,12 +275,14 @@ public class IssueServiceImpl implements IssueService {
         User technician = userRepository.findById(technicianId)
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + technicianId));
 
+        validateAssignableTechnician(technician);
+
         IssueAssignment assignment = new IssueAssignment();
         assignment.setIssue(issue);
         assignment.setTechnician(technician);
         issueAssignmentRepository.save(assignment);
 
-        issue.setStatus("ASSIGNED");
+        issue.setStatus(STATUS_ASSIGNED);
         Issue updatedIssue = issueRepository.save(issue);
         evictCurrentTenantIssueCache();
         notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId);
@@ -293,7 +304,7 @@ public class IssueServiceImpl implements IssueService {
                 .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + loggedInUserId));
 
         String oldStatus = issue.getStatus();
-        issue.setStatus(newStatus);
+        updateIssueStatus(issue, newStatus);
 
         Issue updatedIssue = issueRepository.save(issue);
 
@@ -322,9 +333,44 @@ public class IssueServiceImpl implements IssueService {
         response.setApartmentId(issue.getApartment().getId());
         response.setCreatedById(issue.getCreatedBy().getId());
         response.setCategoryId(issue.getCategory() != null ? issue.getCategory().getId() : null);
+        Optional<IssueAssignment> currentAssignment =
+                issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(issue.getId());
+        if (STATUS_ASSIGNED.equals(issue.getStatus()) && currentAssignment.isEmpty()) {
+            throw new ConflictException("Issue is ASSIGNED but has no assigned technician.");
+        }
+        currentAssignment.ifPresent(assignment -> {
+            Long technicianId = assignment.getTechnician().getId();
+            response.setAssignedTechnicianId(technicianId);
+            response.setAssignedTechnicianUserId(technicianId);
+        });
         response.setCreatedAt(issue.getCreatedAt());
         response.setUpdatedAt(issue.getUpdatedAt());
         return response;
+    }
+
+    private void updateIssueStatus(Issue issue, String newStatus) {
+        if (STATUS_ASSIGNED.equals(newStatus) && !issueAssignmentRepository.existsByIssueId(issue.getId())) {
+            throw new IllegalArgumentException("Issue cannot be marked ASSIGNED without a technician.");
+        }
+
+        issue.setStatus(newStatus);
+    }
+
+    private void validateAssignableTechnician(User technician) {
+        if (!Boolean.TRUE.equals(technician.getIsActive())) {
+            throw new IllegalArgumentException("Technician user must be active.");
+        }
+
+        Role role = roleRepository.findById(technician.getRoleId())
+                .orElseThrow(() -> new IllegalArgumentException("Technician user role not found."));
+
+        if (!ROLE_TECHNICIAN.equals(role.getName())) {
+            throw new IllegalArgumentException("User must have ROLE_TECHNICIAN to be assigned.");
+        }
+
+        if (technicianProfileRepository.findByUserId(technician.getId()).isEmpty()) {
+            throw new IllegalArgumentException("Technician profile not found for user id: " + technician.getId());
+        }
     }
 
     private PageRequest buildPageRequest(IssueFilterRequest filter) {

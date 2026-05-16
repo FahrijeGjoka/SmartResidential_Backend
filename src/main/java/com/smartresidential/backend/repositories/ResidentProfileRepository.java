@@ -7,6 +7,8 @@ import java.util.List;
 import java.util.Optional;
 public interface ResidentProfileRepository extends BaseRepository<ResidentProfile, Long> {
     Optional<ResidentProfile> findByUserId(Long userId);
+    boolean existsByUserId(Long userId);
+    boolean existsByUserIdAndIdNot(Long userId, Long id);
     Optional<ResidentProfile> findByApartmentId(Long apartmentId);
     List<ResidentProfile> findByApartmentBuildingId(Long buildingId);
     @Query("""
