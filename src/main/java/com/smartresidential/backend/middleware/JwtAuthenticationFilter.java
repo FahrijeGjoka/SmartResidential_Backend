@@ -28,6 +28,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String AUTH_HEADER = "Authorization";
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String TENANT_HEADER = "X-Tenant-Identifier";
+    private static final String LOGIN_PATH = "/api/auth/login";
+    private static final String SIGNUP_PATH = "/api/auth/signup";
+    private static final String VERIFY_PATH = "/api/auth/verify";
 
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
@@ -44,6 +47,30 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
         this.objectMapper = objectMapper;
+    }
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String method = request.getMethod();
+        String path = getRequestPath(request);
+
+        return ("POST".equalsIgnoreCase(method) && (LOGIN_PATH.equals(path) || SIGNUP_PATH.equals(path)))
+                || ("GET".equalsIgnoreCase(method) && VERIFY_PATH.equals(path));
+    }
+
+    private String getRequestPath(HttpServletRequest request) {
+        String path = request.getServletPath();
+
+        if (path == null || path.isBlank()) {
+            path = request.getRequestURI();
+            String contextPath = request.getContextPath();
+
+            if (contextPath != null && !contextPath.isBlank() && path.startsWith(contextPath)) {
+                path = path.substring(contextPath.length());
+            }
+        }
+
+        return path;
     }
 
     @Override

@@ -6,6 +6,7 @@ import com.smartresidential.backend.middleware.JwtAuthenticationFilter;
 import com.smartresidential.backend.middleware.LoggingMiddleware;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -51,13 +52,15 @@ public class SecurityConfig {
                         session.sessionCreationPolicy(SessionCreationPolicy.STATELESS)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/signup").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/verify").permitAll()
                         .requestMatchers(
                                 "/swagger-ui/**",
                                 "/swagger-ui.html",
                                 "/swagger-ui/index.html",
                                 "/v3/api-docs/**",
                                 "/webjars/**",
-                                "/api/auth/**",
                                 "/api/tenants/**",
                                 "/api/ai/**",
                                 "/error"
