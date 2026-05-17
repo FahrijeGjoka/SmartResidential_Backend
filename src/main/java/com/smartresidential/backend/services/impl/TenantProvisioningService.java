@@ -29,13 +29,16 @@ public class TenantProvisioningService {
         jdbcTemplate.execute(sql);
     }
 
-    private void runTenantMigrations(String schemaName) {
+    public void runTenantMigrations(String schemaName) {
+        validateSchemaName(schemaName);
+
         Flyway flyway = Flyway.configure()
                 .dataSource(dataSource)
                 .schemas(schemaName)
                 .defaultSchema(schemaName)
                 .locations("classpath:db/migration/tenant")
                 .baselineOnMigrate(true)
+                .validateOnMigrate(false)
                 .load();
 
         flyway.migrate();
