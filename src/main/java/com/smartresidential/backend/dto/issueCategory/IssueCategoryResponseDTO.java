@@ -5,6 +5,7 @@ public class IssueCategoryResponseDTO {
     private Long id;
     private String name;
     private String description;
+    private String requiredSpecialization;
 
     public IssueCategoryResponseDTO() {
     }
@@ -29,7 +30,15 @@ public class IssueCategoryResponseDTO {
         return description;
     }
 
+    public String getRequiredSpecialization() {
+        return requiredSpecialization;
+    }
+
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setRequiredSpecialization(String requiredSpecialization) {
+        this.requiredSpecialization = requiredSpecialization;
     }
 }

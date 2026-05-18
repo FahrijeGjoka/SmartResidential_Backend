@@ -4,6 +4,8 @@ import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.exceptions.ConflictException;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.services.interfaces.RoleService;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -21,6 +23,11 @@ public class RoleServiceImpl implements RoleService {
     @Override
     public List<Role> getAllRoles() {
         return roleRepository.findAll();
+    }
+
+    @Override
+    public Page<Role> getAllRoles(Pageable pageable) {
+        return roleRepository.findAll(pageable);
     }
 
     @Override

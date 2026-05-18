@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.ai.IssueCategoryMatch;
 import com.smartresidential.backend.dto.issue.CreateIssueRequest;
 import com.smartresidential.backend.dto.issue.IssueFilterRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
@@ -9,23 +10,31 @@ import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.IssueStatusHistory;
+import com.smartresidential.backend.entities.MaintenanceRequest;
+import com.smartresidential.backend.entities.ResidentProfile;
 import com.smartresidential.backend.entities.Role;
+import com.smartresidential.backend.entities.TechnicianProfile;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.cache.TenantCacheEvictor;
-import com.smartresidential.backend.exceptions.ConflictException;
+import com.smartresidential.backend.exceptions.BadRequestException;
+import com.smartresidential.backend.exceptions.ForbiddenException;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.jobs.NotificationJob;
+import com.smartresidential.backend.mapper.IssueMapper;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.IssueStatusHistoryRepository;
+import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
+import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.IssueCategoryMatcherService;
 import com.smartresidential.backend.services.interfaces.IssueService;
 import com.smartresidential.backend.specifications.IssueSpecification;
 
@@ -38,7 +47,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 
+import java.time.LocalDateTime;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
 
@@ -50,8 +62,15 @@ public class IssueServiceImpl implements IssueService {
     private static final int DEFAULT_PAGE = 0;
     private static final int DEFAULT_SIZE = 20;
     private static final int MAX_PAGE_SIZE = 100;
+    private static final String STATUS_OPEN = "OPEN";
     private static final String STATUS_ASSIGNED = "ASSIGNED";
+    private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
+    private static final String ROLE_RESIDENT = "ROLE_RESIDENT";
     private static final String ROLE_TECHNICIAN = "ROLE_TECHNICIAN";
+    private static final String GENERAL_MAINTENANCE_SPECIALIZATION = "General maintenance";
+    private static final int DEFAULT_MAX_ACTIVE_ISSUES = 5;
+    private static final Set<String> ACTIVE_WORKLOAD_STATUSES = Set.of(STATUS_ASSIGNED, STATUS_IN_PROGRESS);
+    private static final Set<String> HIGH_PRIORITY_VALUES = Set.of("URGENT", "HIGH");
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(
             "id",
             "title",
@@ -67,9 +86,13 @@ public class IssueServiceImpl implements IssueService {
     private final UserRepository userRepository;
     private final IssueAssignmentRepository issueAssignmentRepository;
     private final IssueStatusHistoryRepository issueStatusHistoryRepository;
+    private final MaintenanceRequestRepository maintenanceRequestRepository;
+    private final ResidentProfileRepository residentProfileRepository;
     private final TechnicianProfileRepository technicianProfileRepository;
     private final RoleRepository roleRepository;
+    private final IssueCategoryMatcherService issueCategoryMatcherService;
     private final NotificationJob notificationJob;
+    private final IssueMapper issueMapper;
     private final TenantCacheEvictor tenantCacheEvictor;
 
     @Override
@@ -80,37 +103,43 @@ public class IssueServiceImpl implements IssueService {
             throw new UnauthorizedException("Authenticated user is required.");
         }
 
-        Apartment apartment = apartmentRepository.findById(request.getApartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException(
-                        "Apartment not found with id: " + request.getApartmentId()
-                ));
-
         User createdBy = userRepository.findById(loggedInUserId)
                 .orElseThrow(() -> new ResourceNotFoundException(
                         "User not found with id: " + loggedInUserId
                 ));
 
+        Apartment apartment = resolveIssueApartment(request, loggedInUserId);
+
         IssueCategory category = null;
-        if (request.getCategoryId() != null) {
+        IssueCategoryMatch categoryMatch = null;
+        if (!isResident() && request.getCategoryId() != null) {
             category = issueCategoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Issue category not found with id: " + request.getCategoryId()
                     ));
+        } else {
+            categoryMatch = resolveAutoCategory(request);
+            category = categoryMatch != null ? categoryMatch.getCategory() : null;
         }
 
         Issue issue = new Issue();
         issue.setTitle(request.getTitle());
         issue.setDescription(request.getDescription());
-        issue.setStatus("OPEN");
+        issue.setStatus(STATUS_OPEN);
         issue.setPriority(request.getPriority());
         issue.setApartment(apartment);
         issue.setCreatedBy(createdBy);
         issue.setCategory(category);
+        if (categoryMatch != null) {
+            issue.setAiCategoryConfidence(categoryMatch.getConfidence());
+            issue.setAiCategoryReason(categoryMatch.getReason());
+        }
 
         Issue savedIssue = issueRepository.save(issue);
+        Issue assignedIssue = autoAssignTechnician(savedIssue, createdBy);
         evictCurrentTenantIssueCache();
-        notificationJob.notifyIssueCreated(savedIssue.getId());
-        return mapToResponse(savedIssue);
+        notificationJob.notifyIssueCreated(assignedIssue.getId());
+        return mapToResponse(assignedIssue);
     }
 
     @Override
@@ -158,12 +187,23 @@ public class IssueServiceImpl implements IssueService {
 
     @Override
     @Transactional(readOnly = true)
-    @Cacheable(
-            cacheNames = CacheNames.ISSUES,
-            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).all()"
-    )
     public List<IssueResponseDTO> getAllIssues() {
+        if (isResident()) {
+            return getMyIssues();
+        }
+
         return issueRepository.findAll()
+                .stream()
+                .map(this::mapToResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<IssueResponseDTO> getMyIssues() {
+        Long currentUserId = requireAuthenticatedUserId();
+
+        return issueRepository.findByCreatedById(currentUserId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -193,9 +233,14 @@ public class IssueServiceImpl implements IssueService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = CacheNames.ISSUES,
-            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byStatus(#status)"
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byStatus(#status)",
+            condition = "T(com.smartresidential.backend.multitenancy.TenantContext).getRoleName() != 'ROLE_RESIDENT'"
     )
     public List<IssueResponseDTO> getIssuesByStatus(String status) {
+        if (isResident()) {
+            return getMyIssues();
+        }
+
         return issueRepository.findByStatus(status)
                 .stream()
                 .map(this::mapToResponse)
@@ -206,9 +251,14 @@ public class IssueServiceImpl implements IssueService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = CacheNames.ISSUES,
-            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byPriority(#priority)"
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byPriority(#priority)",
+            condition = "T(com.smartresidential.backend.multitenancy.TenantContext).getRoleName() != 'ROLE_RESIDENT'"
     )
     public List<IssueResponseDTO> getIssuesByPriority(String priority) {
+        if (isResident()) {
+            return getMyIssues();
+        }
+
         return issueRepository.findByPriority(priority)
                 .stream()
                 .map(this::mapToResponse)
@@ -219,9 +269,14 @@ public class IssueServiceImpl implements IssueService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = CacheNames.ISSUES,
-            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byCategory(#categoryId)"
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byCategory(#categoryId)",
+            condition = "T(com.smartresidential.backend.multitenancy.TenantContext).getRoleName() != 'ROLE_RESIDENT'"
     )
     public List<IssueResponseDTO> getIssuesByCategory(Long categoryId) {
+        if (isResident()) {
+            return getMyIssues();
+        }
+
         return issueRepository.findByCategoryId(categoryId)
                 .stream()
                 .map(this::mapToResponse)
@@ -232,9 +287,14 @@ public class IssueServiceImpl implements IssueService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = CacheNames.ISSUES,
-            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byApartment(#apartmentId)"
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byApartment(#apartmentId)",
+            condition = "T(com.smartresidential.backend.multitenancy.TenantContext).getRoleName() != 'ROLE_RESIDENT'"
     )
     public List<IssueResponseDTO> getIssuesByApartment(Long apartmentId) {
+        if (isResident()) {
+            return getMyIssues();
+        }
+
         return issueRepository.findByApartmentId(apartmentId)
                 .stream()
                 .map(this::mapToResponse)
@@ -248,6 +308,13 @@ public class IssueServiceImpl implements IssueService {
             key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byCreatedBy(#userId)"
     )
     public List<IssueResponseDTO> getIssuesByCreatedBy(Long userId) {
+        if (isResident()) {
+            Long currentUserId = requireAuthenticatedUserId();
+            if (!currentUserId.equals(userId)) {
+                throw new ForbiddenException("Residents can only list their own issues.");
+            }
+        }
+
         return issueRepository.findByCreatedById(userId)
                 .stream()
                 .map(this::mapToResponse)
@@ -258,9 +325,14 @@ public class IssueServiceImpl implements IssueService {
     @Transactional(readOnly = true)
     @Cacheable(
             cacheNames = CacheNames.ISSUES,
-            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byTitle(#title)"
+            key = "T(com.smartresidential.backend.cache.IssueCacheKeys).byTitle(#title)",
+            condition = "T(com.smartresidential.backend.multitenancy.TenantContext).getRoleName() != 'ROLE_RESIDENT'"
     )
     public List<IssueResponseDTO> searchIssuesByTitle(String title) {
+        if (isResident()) {
+            return getMyIssues();
+        }
+
         return issueRepository.findByTitleContainingIgnoreCase(title)
                 .stream()
                 .map(this::mapToResponse)
@@ -284,6 +356,7 @@ public class IssueServiceImpl implements IssueService {
 
         issue.setStatus(STATUS_ASSIGNED);
         Issue updatedIssue = issueRepository.save(issue);
+        ensureMaintenanceWorkOrder(updatedIssue, resolveAssignmentRequester(technician));
         evictCurrentTenantIssueCache();
         notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId);
         return mapToResponse(updatedIssue);
@@ -323,29 +396,189 @@ public class IssueServiceImpl implements IssueService {
         tenantCacheEvictor.evictCurrentTenant(CacheNames.ISSUES);
     }
 
-    private IssueResponseDTO mapToResponse(Issue issue) {
-        IssueResponseDTO response = new IssueResponseDTO();
-        response.setId(issue.getId());
-        response.setTitle(issue.getTitle());
-        response.setDescription(issue.getDescription());
-        response.setStatus(issue.getStatus());
-        response.setPriority(issue.getPriority());
-        response.setApartmentId(issue.getApartment().getId());
-        response.setCreatedById(issue.getCreatedBy().getId());
-        response.setCategoryId(issue.getCategory() != null ? issue.getCategory().getId() : null);
-        Optional<IssueAssignment> currentAssignment =
-                issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(issue.getId());
-        if (STATUS_ASSIGNED.equals(issue.getStatus()) && currentAssignment.isEmpty()) {
-            throw new ConflictException("Issue is ASSIGNED but has no assigned technician.");
+    private Long requireAuthenticatedUserId() {
+        Long currentUserId = TenantContext.getUserId();
+        if (currentUserId == null) {
+            throw new UnauthorizedException("Authenticated user is required.");
         }
-        currentAssignment.ifPresent(assignment -> {
-            Long technicianId = assignment.getTechnician().getId();
-            response.setAssignedTechnicianId(technicianId);
-            response.setAssignedTechnicianUserId(technicianId);
-        });
-        response.setCreatedAt(issue.getCreatedAt());
-        response.setUpdatedAt(issue.getUpdatedAt());
-        return response;
+        return currentUserId;
+    }
+
+    private boolean isResident() {
+        return ROLE_RESIDENT.equals(TenantContext.getRoleName());
+    }
+
+    private Apartment resolveIssueApartment(CreateIssueRequest request, Long loggedInUserId) {
+        if (isResident()) {
+            ResidentProfile residentProfile = residentProfileRepository.findByUserId(loggedInUserId)
+                    .orElseThrow(this::residentApartmentNotLinkedException);
+
+            if (residentProfile.getApartment() == null) {
+                throw residentApartmentNotLinkedException();
+            }
+
+            return residentProfile.getApartment();
+        }
+
+        return apartmentRepository.findById(request.getApartmentId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Apartment not found with id: " + request.getApartmentId()
+                ));
+    }
+
+    private BadRequestException residentApartmentNotLinkedException() {
+        return new BadRequestException("Your resident profile is not linked to an apartment yet.");
+    }
+
+    private IssueCategoryMatch resolveAutoCategory(CreateIssueRequest request) {
+        try {
+            return issueCategoryMatcherService
+                    .matchCategory(request.getTitle(), request.getDescription())
+                    .orElse(null);
+        } catch (RuntimeException exception) {
+            return null;
+        }
+    }
+
+    private Issue autoAssignTechnician(Issue issue, User requestedBy) {
+        IssueCategory category = issue.getCategory();
+        if (category == null || category.getRequiredSpecialization() == null
+                || category.getRequiredSpecialization().isBlank()) {
+            return issue;
+        }
+
+        Optional<TechnicianProfile> selectedTechnician =
+                selectTechnician(category.getRequiredSpecialization(), issue.getPriority());
+
+        if (selectedTechnician.isEmpty()) {
+            return issue;
+        }
+
+        User technician = selectedTechnician.get().getUser();
+        IssueAssignment assignment = new IssueAssignment();
+        assignment.setIssue(issue);
+        assignment.setTechnician(technician);
+        issueAssignmentRepository.save(assignment);
+
+        issue.setStatus(STATUS_ASSIGNED);
+        Issue updatedIssue = issueRepository.save(issue);
+        ensureMaintenanceWorkOrder(updatedIssue, requestedBy);
+        notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technician.getId());
+        return updatedIssue;
+    }
+
+    private User resolveAssignmentRequester(User fallback) {
+        Long currentUserId = TenantContext.getUserId();
+        if (currentUserId == null) {
+            return fallback;
+        }
+
+        return userRepository.findById(currentUserId).orElse(fallback);
+    }
+
+    private void ensureMaintenanceWorkOrder(Issue issue, User requestedBy) {
+        if (issue == null || issue.getId() == null || requestedBy == null) {
+            return;
+        }
+
+        if (maintenanceRequestRepository.existsByIssue_Id(issue.getId())) {
+            return;
+        }
+
+        MaintenanceRequest maintenanceRequest = new MaintenanceRequest();
+        maintenanceRequest.setIssue(issue);
+        maintenanceRequest.setRequestedBy(requestedBy);
+        maintenanceRequest.setDescription("Work order for issue: " + nullToBlank(issue.getTitle()));
+        maintenanceRequestRepository.save(maintenanceRequest);
+    }
+
+    private String nullToBlank(String value) {
+        return value == null ? "" : value;
+    }
+
+    private Optional<TechnicianProfile> selectTechnician(String requiredSpecialization, String priority) {
+        List<TechnicianProfile> matchingSpecialists = findEligibleTechnicians(requiredSpecialization);
+        if (!matchingSpecialists.isEmpty()) {
+            return selectLowestWorkload(matchingSpecialists, priority);
+        }
+
+        return selectLowestWorkload(
+                findEligibleTechnicians(GENERAL_MAINTENANCE_SPECIALIZATION),
+                priority
+        );
+    }
+
+    private List<TechnicianProfile> findEligibleTechnicians(String specialization) {
+        String normalizedSpecialization = normalizeSpecialization(specialization);
+        return technicianProfileRepository.findByIsAvailableTrue()
+                .stream()
+                .filter(profile -> normalizedSpecialization.equals(normalizeSpecialization(profile.getSpecialization())))
+                .filter(this::isTechnicianProfileAssignable)
+                .filter(profile -> activeWorkload(profile, false) < maxActiveIssues(profile))
+                .toList();
+    }
+
+    private Optional<TechnicianProfile> selectLowestWorkload(List<TechnicianProfile> profiles, String priority) {
+        boolean highPriority = isHighPriority(priority);
+        return profiles.stream()
+                .min(Comparator
+                        .comparingInt((TechnicianProfile profile) -> highPriority
+                                ? activeWorkload(profile, true)
+                                : activeWorkload(profile, false))
+                        .thenComparing(profile -> latestAssignedAt(profile), Comparator.nullsFirst(Comparator.naturalOrder()))
+                        .thenComparing(profile -> profile.getUser().getId()));
+    }
+
+    private int activeWorkload(TechnicianProfile profile, boolean highPriorityOnly) {
+        return (int) issueAssignmentRepository.findByTechnicianId(profile.getUser().getId())
+                .stream()
+                .map(IssueAssignment::getIssue)
+                .filter(assignedIssue -> assignedIssue != null
+                        && ACTIVE_WORKLOAD_STATUSES.contains(assignedIssue.getStatus()))
+                .filter(assignedIssue -> !highPriorityOnly || isHighPriority(assignedIssue.getPriority()))
+                .count();
+    }
+
+    private LocalDateTime latestAssignedAt(TechnicianProfile profile) {
+        return issueAssignmentRepository.findByTechnicianId(profile.getUser().getId())
+                .stream()
+                .map(IssueAssignment::getAssignedAt)
+                .filter(assignedAt -> assignedAt != null)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+    }
+
+    private int maxActiveIssues(TechnicianProfile profile) {
+        return profile.getMaxActiveIssues() == null || profile.getMaxActiveIssues() < 1
+                ? DEFAULT_MAX_ACTIVE_ISSUES
+                : profile.getMaxActiveIssues();
+    }
+
+    private boolean isTechnicianProfileAssignable(TechnicianProfile profile) {
+        User user = profile.getUser();
+        if (user == null || !Boolean.TRUE.equals(user.getIsActive())) {
+            return false;
+        }
+
+        return roleRepository.findById(user.getRoleId())
+                .map(Role::getName)
+                .filter(ROLE_TECHNICIAN::equals)
+                .isPresent();
+    }
+
+    private boolean isHighPriority(String priority) {
+        return priority != null && HIGH_PRIORITY_VALUES.contains(priority.toUpperCase(Locale.ROOT));
+    }
+
+    private String normalizeSpecialization(String specialization) {
+        return specialization == null ? "" : specialization.trim().toLowerCase(Locale.ROOT);
+    }
+
+    private IssueResponseDTO mapToResponse(Issue issue) {
+        Optional<IssueAssignment> currentAssignment =
+                issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(issue.getId())
+                        .filter(assignment -> assignment.getTechnician() != null);
+        return issueMapper.toResponse(issue, currentAssignment);
     }
 
     private void updateIssueStatus(Issue issue, String newStatus) {

@@ -4,6 +4,7 @@ public class UpdateTechnicianProfileRequest {
 
     private String specialization;
     private Boolean isAvailable;
+    private Integer maxActiveIssues;
 
     public UpdateTechnicianProfileRequest() {
     }
@@ -22,5 +23,13 @@ public class UpdateTechnicianProfileRequest {
 
     public void setIsAvailable(Boolean isAvailable) {
         this.isAvailable = isAvailable;
+    }
+
+    public Integer getMaxActiveIssues() {
+        return maxActiveIssues;
+    }
+
+    public void setMaxActiveIssues(Integer maxActiveIssues) {
+        this.maxActiveIssues = maxActiveIssues;
     }
 }

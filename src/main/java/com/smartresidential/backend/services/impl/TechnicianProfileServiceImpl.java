@@ -3,26 +3,38 @@ package com.smartresidential.backend.services.impl;
 import com.smartresidential.backend.dto.technicianProfile.CreateTechnicianProfileRequest;
 import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileResponseDTO;
 import com.smartresidential.backend.dto.technicianProfile.UpdateTechnicianProfileRequest;
+import com.smartresidential.backend.entities.Issue;
+import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.TechnicianProfile;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
+import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.TechnicianProfileService;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Set;
 
 @Service
 public class TechnicianProfileServiceImpl implements TechnicianProfileService {
 
+    private static final int DEFAULT_MAX_ACTIVE_ISSUES = 5;
+    private static final Set<String> ACTIVE_WORKLOAD_STATUSES = Set.of("ASSIGNED", "IN_PROGRESS");
+    private static final Set<String> HIGH_PRIORITY_VALUES = Set.of("HIGH", "URGENT");
+
     private final TechnicianProfileRepository repository;
     private final UserRepository userRepository;
+    private final IssueAssignmentRepository issueAssignmentRepository;
 
     public TechnicianProfileServiceImpl(TechnicianProfileRepository repository,
-                                        UserRepository userRepository) {
+                                        UserRepository userRepository,
+                                        IssueAssignmentRepository issueAssignmentRepository) {
         this.repository = repository;
         this.userRepository = userRepository;
+        this.issueAssignmentRepository = issueAssignmentRepository;
     }
 
     @Override
@@ -34,8 +46,16 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
         profile.setUser(user);
         profile.setSpecialization(request.getSpecialization());
         profile.setIsAvailable(request.getIsAvailable());
+        profile.setMaxActiveIssues(resolveMaxActiveIssues(request.getMaxActiveIssues()));
 
         return mapToDTO(repository.save(profile));
+    }
+
+    @Override
+    public TechnicianProfileResponseDTO getById(Long id) {
+        return repository.findById(id)
+                .map(this::mapToDTO)
+                .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
     }
 
     @Override
@@ -43,6 +63,12 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
         return repository.findByUserId(userId)
                 .map(this::mapToDTO)
                 .orElseThrow(() -> new ResourceNotFoundException("Profile not found"));
+    }
+
+    @Override
+    public List<TechnicianProfileResponseDTO> getAll() {
+        return repository.findAll()
+                .stream().map(this::mapToDTO).toList();
     }
 
     @Override
@@ -68,6 +94,9 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
         if (request.getIsAvailable() != null)
             profile.setIsAvailable(request.getIsAvailable());
 
+        if (request.getMaxActiveIssues() != null)
+            profile.setMaxActiveIssues(resolveMaxActiveIssues(request.getMaxActiveIssues()));
+
         return mapToDTO(repository.save(profile));
     }
 
@@ -91,6 +120,55 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
         dto.setUserId(p.getUser().getId());
         dto.setSpecialization(p.getSpecialization());
         dto.setIsAvailable(p.getIsAvailable());
+        dto.setMaxActiveIssues(resolveMaxActiveIssues(p.getMaxActiveIssues()));
+        dto.setActiveIssueCount(activeWorkload(p, false));
+        dto.setActiveHighPriorityIssueCount(activeWorkload(p, true));
+        dto.setLastAssignedAt(latestAssignedAt(p));
         return dto;
+    }
+
+    private int resolveMaxActiveIssues(Integer maxActiveIssues) {
+        return maxActiveIssues == null || maxActiveIssues < 1
+                ? DEFAULT_MAX_ACTIVE_ISSUES
+                : maxActiveIssues;
+    }
+
+    private int activeWorkload(TechnicianProfile profile, boolean highPriorityOnly) {
+        return (int) issueAssignmentRepository.findByTechnicianId(profile.getUser().getId())
+                .stream()
+                .map(IssueAssignment::getIssue)
+                .filter(issue -> issue != null && ACTIVE_WORKLOAD_STATUSES.contains(issue.getStatus()))
+                .filter(issue -> !highPriorityOnly || isHighPriority(issue))
+                .count();
+    }
+
+    private boolean isHighPriority(Issue issue) {
+        return issue.getPriority() != null && HIGH_PRIORITY_VALUES.contains(issue.getPriority().toUpperCase());
+    }
+
+    private LocalDateTime latestAssignedAt(TechnicianProfile profile) {
+        return issueAssignmentRepository.findByTechnicianId(profile.getUser().getId())
+                .stream()
+                .map(this::assignmentTimestamp)
+                .filter(timestamp -> timestamp != null)
+                .max(LocalDateTime::compareTo)
+                .orElse(null);
+    }
+
+    private LocalDateTime assignmentTimestamp(IssueAssignment assignment) {
+        if (assignment.getAssignedAt() != null) {
+            return assignment.getAssignedAt();
+        }
+
+        Issue issue = assignment.getIssue();
+        if (issue == null) {
+            return null;
+        }
+
+        if (issue.getUpdatedAt() != null) {
+            return issue.getUpdatedAt();
+        }
+
+        return issue.getCreatedAt();
     }
 }

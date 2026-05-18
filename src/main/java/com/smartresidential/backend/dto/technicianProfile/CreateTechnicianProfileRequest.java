@@ -5,6 +5,7 @@ public class CreateTechnicianProfileRequest {
     private Long userId;
     private String specialization;
     private Boolean isAvailable;
+    private Integer maxActiveIssues;
 
     public CreateTechnicianProfileRequest() {
     }
@@ -31,5 +32,13 @@ public class CreateTechnicianProfileRequest {
 
     public void setIsAvailable(Boolean isAvailable) {
         this.isAvailable = isAvailable;
+    }
+
+    public Integer getMaxActiveIssues() {
+        return maxActiveIssues;
+    }
+
+    public void setMaxActiveIssues(Integer maxActiveIssues) {
+        this.maxActiveIssues = maxActiveIssues;
     }
 }

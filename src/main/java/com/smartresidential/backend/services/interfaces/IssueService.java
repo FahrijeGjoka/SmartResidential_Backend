@@ -18,6 +18,8 @@ public interface IssueService {
 
     List<IssueResponseDTO> getAllIssues();
 
+    List<IssueResponseDTO> getMyIssues();
+
     Page<IssueResponseDTO> searchIssues(IssueFilterRequest filter);
 
     void deleteIssue(Long id);

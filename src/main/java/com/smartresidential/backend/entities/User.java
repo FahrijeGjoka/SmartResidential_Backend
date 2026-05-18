@@ -1,5 +1,6 @@
 package com.smartresidential.backend.entities;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.*;
 import java.time.LocalDateTime;
 
@@ -54,6 +55,7 @@ public class User {
         return email;
     }
 
+    @JsonIgnore
     public String getPasswordHash() {
         return passwordHash;
     }

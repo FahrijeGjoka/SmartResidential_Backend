@@ -15,6 +15,9 @@ public class IssueCategory {
 
     private String description;
 
+    @Column(name = "required_specialization")
+    private String requiredSpecialization;
+
     public IssueCategory() {
     }
 
@@ -30,6 +33,10 @@ public class IssueCategory {
         return description;
     }
 
+    public String getRequiredSpecialization() {
+        return requiredSpecialization;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -40,6 +47,10 @@ public class IssueCategory {
 
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setRequiredSpecialization(String requiredSpecialization) {
+        this.requiredSpecialization = requiredSpecialization;
     }
 }
 

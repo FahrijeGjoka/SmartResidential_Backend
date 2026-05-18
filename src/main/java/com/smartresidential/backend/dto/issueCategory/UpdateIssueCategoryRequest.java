@@ -4,6 +4,7 @@ public class UpdateIssueCategoryRequest {
 
     private String name;
     private String description;
+    private String requiredSpecialization;
 
     public UpdateIssueCategoryRequest() {
     }
@@ -20,7 +21,15 @@ public class UpdateIssueCategoryRequest {
         return description;
     }
 
+    public String getRequiredSpecialization() {
+        return requiredSpecialization;
+    }
+
     public void setDescription(String description) {
         this.description = description;
+    }
+
+    public void setRequiredSpecialization(String requiredSpecialization) {
+        this.requiredSpecialization = requiredSpecialization;
     }
 }

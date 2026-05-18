@@ -5,6 +5,7 @@ import com.smartresidential.backend.services.interfaces.JwtService;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import javax.crypto.SecretKey;
@@ -15,11 +16,19 @@ import java.util.function.Function;
 @Service
 public class JwtServiceImpl implements JwtService {
 
-    private static final String SECRET_KEY = "your_super_secret_key_your_super_secret_key_123456";
     private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24;
 
+    private final String secretKey;
+
+    public JwtServiceImpl(@Value("${app.jwt.secret:${JWT_SECRET:}}") String secretKey) {
+        if (secretKey == null || secretKey.getBytes(StandardCharsets.UTF_8).length < 32) {
+            throw new IllegalStateException("JWT secret must be configured with at least 32 bytes.");
+        }
+        this.secretKey = secretKey;
+    }
+
     private SecretKey getSigningKey() {
-        return Keys.hmacShaKeyFor(SECRET_KEY.getBytes(StandardCharsets.UTF_8));
+        return Keys.hmacShaKeyFor(secretKey.getBytes(StandardCharsets.UTF_8));
     }
 
     @Override

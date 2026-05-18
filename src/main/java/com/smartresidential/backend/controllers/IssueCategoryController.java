@@ -6,12 +6,14 @@ import com.smartresidential.backend.dto.issueCategory.UpdateIssueCategoryRequest
 import com.smartresidential.backend.services.interfaces.IssueCategoryService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/issue-categories")
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
 public class IssueCategoryController {
 
     private final IssueCategoryService issueCategoryService;
@@ -21,6 +23,7 @@ public class IssueCategoryController {
     }
 
     @PostMapping
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<IssueCategoryResponseDTO> createCategory(
             @RequestBody CreateIssueCategoryRequest request
     ) {
@@ -39,6 +42,7 @@ public class IssueCategoryController {
     }
 
     @PutMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<IssueCategoryResponseDTO> updateCategory(
             @PathVariable Long id,
             @RequestBody UpdateIssueCategoryRequest request
@@ -47,6 +51,7 @@ public class IssueCategoryController {
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public ResponseEntity<Void> deleteCategory(@PathVariable Long id) {
         issueCategoryService.deleteCategory(id);
         return ResponseEntity.noContent().build();

@@ -19,6 +19,9 @@ public class TechnicianProfile {
     @Column(name = "is_available")
     private Boolean isAvailable = true;
 
+    @Column(name = "max_active_issues")
+    private Integer maxActiveIssues = 5;
+
     public TechnicianProfile() {
     }
 
@@ -26,6 +29,9 @@ public class TechnicianProfile {
     public void prePersist() {
         if (this.isAvailable == null) {
             this.isAvailable = true;
+        }
+        if (this.maxActiveIssues == null) {
+            this.maxActiveIssues = 5;
         }
     }
 
@@ -45,6 +51,10 @@ public class TechnicianProfile {
         return isAvailable;
     }
 
+    public Integer getMaxActiveIssues() {
+        return maxActiveIssues;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -59,5 +69,9 @@ public class TechnicianProfile {
 
     public void setIsAvailable(Boolean available) {
         isAvailable = available;
+    }
+
+    public void setMaxActiveIssues(Integer maxActiveIssues) {
+        this.maxActiveIssues = maxActiveIssues;
     }
 }

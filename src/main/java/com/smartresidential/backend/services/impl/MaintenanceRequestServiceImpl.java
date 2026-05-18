@@ -3,10 +3,14 @@ package com.smartresidential.backend.services.impl;
 import com.smartresidential.backend.dto.maintenanceRequest.CreateMaintenanceRequestRequest;
 import com.smartresidential.backend.dto.maintenanceRequest.MaintenanceRequestResponseDTO;
 import com.smartresidential.backend.entities.Issue;
+import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.MaintenanceRequest;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.exceptions.ConflictException;
+import com.smartresidential.backend.exceptions.ForbiddenException;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
+import com.smartresidential.backend.multitenancy.TenantContext;
+import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.UserRepository;
@@ -21,15 +25,18 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
     private final MaintenanceRequestRepository maintenanceRequestRepository;
     private final UserRepository userRepository;
     private final IssueRepository issueRepository;
+    private final IssueAssignmentRepository issueAssignmentRepository;
 
     public MaintenanceRequestServiceImpl(
             MaintenanceRequestRepository maintenanceRequestRepository,
             UserRepository userRepository,
-            IssueRepository issueRepository
+            IssueRepository issueRepository,
+            IssueAssignmentRepository issueAssignmentRepository
     ) {
         this.maintenanceRequestRepository = maintenanceRequestRepository;
         this.userRepository = userRepository;
         this.issueRepository = issueRepository;
+        this.issueAssignmentRepository = issueAssignmentRepository;
     }
 
     @Override
@@ -64,8 +71,17 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
 
     @Override
     public List<MaintenanceRequestResponseDTO> getAllMaintenanceRequests() {
+        String roleName = TenantContext.getRoleName();
+        Long userId = TenantContext.getUserId();
+
+        if ("ROLE_RESIDENT".equals(roleName)) {
+            throw new ForbiddenException("Residents cannot access maintenance work orders.");
+        }
+
         return maintenanceRequestRepository.findAll()
                 .stream()
+                .filter(request -> !"ROLE_TECHNICIAN".equals(roleName)
+                        || isAssignedToTechnician(request, userId))
                 .map(this::convertToResponseDTO)
                 .toList();
     }
@@ -78,10 +94,53 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
     private MaintenanceRequestResponseDTO convertToResponseDTO(MaintenanceRequest maintenanceRequest) {
         MaintenanceRequestResponseDTO dto = new MaintenanceRequestResponseDTO();
         dto.setId(maintenanceRequest.getId());
-        dto.setIssueId(maintenanceRequest.getIssue().getId());
-        dto.setRequestedById(maintenanceRequest.getRequestedBy().getId());
+        dto.setIssueId(maintenanceRequest.getIssue() != null
+                ? maintenanceRequest.getIssue().getId()
+                : null);
+        Issue issue = maintenanceRequest.getIssue();
+        if (issue != null) {
+            dto.setIssueTitle(issue.getTitle());
+            dto.setIssueStatus(issue.getStatus());
+            dto.setIssuePriority(issue.getPriority());
+            dto.setWorkOrderStatus(issue.getStatus());
+            issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(issue.getId())
+                    .filter(assignment -> assignment.getTechnician() != null)
+                    .ifPresent(assignment -> {
+                        User technician = assignment.getTechnician();
+                        dto.setAssignedTechnicianUserId(technician.getId());
+                        dto.setAssignedTechnicianName(formatTechnicianName(technician));
+                    });
+        }
+        dto.setRequestedById(maintenanceRequest.getRequestedBy() != null
+                ? maintenanceRequest.getRequestedBy().getId()
+                : null);
         dto.setDescription(maintenanceRequest.getDescription());
         dto.setRequestedAt(maintenanceRequest.getRequestedAt());
         return dto;
+    }
+
+    private boolean isAssignedToTechnician(MaintenanceRequest request, Long userId) {
+        if (userId == null || request.getIssue() == null || request.getIssue().getId() == null) {
+            return false;
+        }
+
+        return issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(request.getIssue().getId())
+                .map(IssueAssignment::getTechnician)
+                .map(User::getId)
+                .filter(userId::equals)
+                .isPresent();
+    }
+
+    private String formatTechnicianName(User technician) {
+        if (technician == null) {
+            return null;
+        }
+
+        String name = String.join(" ",
+                technician.getFirstName() == null ? "" : technician.getFirstName(),
+                technician.getLastName() == null ? "" : technician.getLastName()
+        ).trim();
+
+        return name.isBlank() ? technician.getEmail() : name;
     }
 }

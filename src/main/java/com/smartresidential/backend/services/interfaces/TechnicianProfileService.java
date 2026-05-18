@@ -10,7 +10,11 @@ public interface TechnicianProfileService {
 
     TechnicianProfileResponseDTO create(CreateTechnicianProfileRequest request);
 
+    TechnicianProfileResponseDTO getById(Long id);
+
     TechnicianProfileResponseDTO getByUserId(Long userId);
+
+    List<TechnicianProfileResponseDTO> getAll();
 
     List<TechnicianProfileResponseDTO> getAvailable();
 
