@@ -8,14 +8,18 @@ public class IssueResponseDTO {
     private Long createdById;
     private Long apartmentId;
     private Long categoryId;
+    private String categoryName;
     private Long assignedTechnicianId;
     private Long assignedTechnicianUserId;
+    private String assignedTechnicianName;
     private String title;
     private String description;
     private String status;
     private String priority;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
+    private Double aiCategoryConfidence;
+    private String aiCategoryReason;
 
     public IssueResponseDTO() {
     }
@@ -52,6 +56,14 @@ public class IssueResponseDTO {
         this.categoryId = categoryId;
     }
 
+    public String getCategoryName() {
+        return categoryName;
+    }
+
+    public void setCategoryName(String categoryName) {
+        this.categoryName = categoryName;
+    }
+
     public Long getAssignedTechnicianId() {
         return assignedTechnicianId;
     }
@@ -66,6 +78,14 @@ public class IssueResponseDTO {
 
     public void setAssignedTechnicianUserId(Long assignedTechnicianUserId) {
         this.assignedTechnicianUserId = assignedTechnicianUserId;
+    }
+
+    public String getAssignedTechnicianName() {
+        return assignedTechnicianName;
+    }
+
+    public void setAssignedTechnicianName(String assignedTechnicianName) {
+        this.assignedTechnicianName = assignedTechnicianName;
     }
 
     public String getTitle() {
@@ -114,5 +134,21 @@ public class IssueResponseDTO {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public Double getAiCategoryConfidence() {
+        return aiCategoryConfidence;
+    }
+
+    public void setAiCategoryConfidence(Double aiCategoryConfidence) {
+        this.aiCategoryConfidence = aiCategoryConfidence;
+    }
+
+    public String getAiCategoryReason() {
+        return aiCategoryReason;
+    }
+
+    public void setAiCategoryReason(String aiCategoryReason) {
+        this.aiCategoryReason = aiCategoryReason;
     }
 }

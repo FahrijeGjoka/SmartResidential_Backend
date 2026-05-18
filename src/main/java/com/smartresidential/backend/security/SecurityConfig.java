@@ -59,7 +59,6 @@ public class SecurityConfig {
                                 "/webjars/**",
                                 "/api/auth/**",
                                 "/api/tenants/**",
-                                "/api/ai/**",
                                 "/error"
                         ).permitAll()
                         .anyRequest().authenticated()

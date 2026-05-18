@@ -1,10 +1,14 @@
 package com.smartresidential.backend.controllers;
 
+import com.smartresidential.backend.dto.ai.IssueCategoryMatchRequest;
+import com.smartresidential.backend.dto.ai.IssueCategoryMatchResponse;
 import com.smartresidential.backend.dto.aiClassificationLog.AIClassificationLogResponseDTO;
 import com.smartresidential.backend.dto.aiClassificationLog.CreateAIClassificationLogRequest;
 import com.smartresidential.backend.services.impl.OllamaService;
 import com.smartresidential.backend.services.interfaces.AIClassificationLogService;
+import com.smartresidential.backend.services.interfaces.IssueCategoryMatcherService;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -12,15 +16,21 @@ import java.util.Map;
 
 @RestController
 @RequestMapping("/api/ai")
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
 public class AIClassificationController {
 
     private final AIClassificationLogService service;
-    private final OllamaService ollamaService;  // 👈 SHTO KËTË
+    private final OllamaService ollamaService;
+    private final IssueCategoryMatcherService issueCategoryMatcherService;
 
-    // 👈 PËRDITËSO KONSTRUKTORIN
-    public AIClassificationController(AIClassificationLogService service, OllamaService ollamaService) {
+    public AIClassificationController(
+            AIClassificationLogService service,
+            OllamaService ollamaService,
+            IssueCategoryMatcherService issueCategoryMatcherService
+    ) {
         this.service = service;
         this.ollamaService = ollamaService;
+        this.issueCategoryMatcherService = issueCategoryMatcherService;
     }
 
     @PostMapping("/classify-issue")
@@ -28,7 +38,14 @@ public class AIClassificationController {
         return service.create(request);
     }
 
-    // 👈 SHTO KËTË METODË
+    @PostMapping("/issue-category-match")
+    public IssueCategoryMatchResponse matchIssueCategory(@RequestBody IssueCategoryMatchRequest request) {
+        return issueCategoryMatcherService.matchCategoryForResponse(
+                request.getTitle(),
+                request.getDescription()
+        );
+    }
+
     @PostMapping("/test-ollama")
     public ResponseEntity<?> testOllama(@RequestBody Map<String, String> request) {
         String text = request.get("rawInput");

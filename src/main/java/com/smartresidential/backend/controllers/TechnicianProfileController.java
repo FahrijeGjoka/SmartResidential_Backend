@@ -4,12 +4,14 @@ import com.smartresidential.backend.dto.technicianProfile.CreateTechnicianProfil
 import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileResponseDTO;
 import com.smartresidential.backend.dto.technicianProfile.UpdateTechnicianProfileRequest;
 import com.smartresidential.backend.services.interfaces.TechnicianProfileService;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
 @RequestMapping("/api/technicians")
+@PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
 public class TechnicianProfileController {
 
     private final TechnicianProfileService service;
@@ -25,12 +27,12 @@ public class TechnicianProfileController {
 
     @GetMapping
     public List<TechnicianProfileResponseDTO> getAll() {
-        return service.getAvailable(); // ose krijo getAll në service nëse don komplet listën
+        return service.getAll();
     }
 
     @GetMapping("/{id}")
     public TechnicianProfileResponseDTO getById(@PathVariable Long id) {
-        return service.update(id, new UpdateTechnicianProfileRequest()); // workaround nëse s’ke getById
+        return service.getById(id);
     }
 
     @GetMapping("/user/{userId}")
@@ -49,18 +51,24 @@ public class TechnicianProfileController {
     }
 
     @PutMapping("/{id}")
-    public TechnicianProfileResponseDTO update(@PathVariable Long id,
-                                               @RequestBody UpdateTechnicianProfileRequest request) {
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
+    public TechnicianProfileResponseDTO update(
+            @PathVariable Long id,
+            @RequestBody UpdateTechnicianProfileRequest request
+    ) {
         return service.update(id, request);
     }
 
     @PatchMapping("/{id}/availability")
-    public void changeAvailability(@PathVariable Long id,
-                                   @RequestParam Boolean isAvailable) {
+    public void changeAvailability(
+            @PathVariable Long id,
+            @RequestParam Boolean isAvailable
+    ) {
         service.changeAvailability(id, isAvailable);
     }
 
     @DeleteMapping("/{id}")
+    @PreAuthorize("hasAuthority('ROLE_ADMIN')")
     public void delete(@PathVariable Long id) {
         service.delete(id);
     }

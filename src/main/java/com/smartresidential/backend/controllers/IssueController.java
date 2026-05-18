@@ -34,7 +34,7 @@ public class IssueController {
                 .body(issueService.createIssue(request));
     }
 
-    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
+    @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF', 'ROLE_RESIDENT')")
     @GetMapping
     public ResponseEntity<List<IssueResponseDTO>> getAllIssues(
             @RequestParam(required = false) String status,
@@ -69,6 +69,12 @@ public class IssueController {
         }
 
         return ResponseEntity.ok(issueService.getAllIssues());
+    }
+
+    @PreAuthorize("hasAuthority('ROLE_RESIDENT')")
+    @GetMapping("/mine")
+    public ResponseEntity<List<IssueResponseDTO>> getMyIssues() {
+        return ResponseEntity.ok(issueService.getMyIssues());
     }
 
     @Operation(

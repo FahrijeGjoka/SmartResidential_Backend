@@ -41,6 +41,12 @@ public class Issue {
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
 
+    @Column(name = "ai_category_confidence")
+    private Double aiCategoryConfidence;
+
+    @Column(name = "ai_category_reason", columnDefinition = "TEXT")
+    private String aiCategoryReason;
+
     public Issue() {
     }
 
@@ -95,6 +101,14 @@ public class Issue {
         return updatedAt;
     }
 
+    public Double getAiCategoryConfidence() {
+        return aiCategoryConfidence;
+    }
+
+    public String getAiCategoryReason() {
+        return aiCategoryReason;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -133,6 +147,14 @@ public class Issue {
 
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
+    }
+
+    public void setAiCategoryConfidence(Double aiCategoryConfidence) {
+        this.aiCategoryConfidence = aiCategoryConfidence;
+    }
+
+    public void setAiCategoryReason(String aiCategoryReason) {
+        this.aiCategoryReason = aiCategoryReason;
     }
 }
 

@@ -24,6 +24,11 @@ public class TenantProvisioningService {
         runTenantMigrations(schemaName);
     }
 
+    public void migrateTenant(String schemaName) {
+        validateSchemaName(schemaName);
+        runTenantMigrations(schemaName);
+    }
+
     private void createSchema(String schemaName) {
         String sql = "CREATE SCHEMA IF NOT EXISTS \"" + schemaName.replace("\"", "\"\"") + "\"";
         jdbcTemplate.execute(sql);

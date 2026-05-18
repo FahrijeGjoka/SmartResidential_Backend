@@ -38,6 +38,7 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
         IssueCategory category = new IssueCategory();
         category.setName(request.getName());
         category.setDescription(request.getDescription());
+        category.setRequiredSpecialization(normalizeSpecialization(request.getRequiredSpecialization()));
 
         IssueCategory savedCategory = issueCategoryRepository.save(category);
         return mapToResponse(savedCategory);
@@ -67,6 +68,10 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
 
         if (request.getDescription() != null) {
             category.setDescription(request.getDescription());
+        }
+
+        if (request.getRequiredSpecialization() != null) {
+            category.setRequiredSpecialization(normalizeSpecialization(request.getRequiredSpecialization()));
         }
 
         IssueCategory updatedCategory = issueCategoryRepository.save(category);
@@ -122,6 +127,15 @@ public class IssueCategoryServiceImpl implements IssueCategoryService {
         response.setId(category.getId());
         response.setName(category.getName());
         response.setDescription(category.getDescription());
+        response.setRequiredSpecialization(category.getRequiredSpecialization());
         return response;
+    }
+
+    private String normalizeSpecialization(String specialization) {
+        if (specialization == null || specialization.isBlank()) {
+            return null;
+        }
+
+        return specialization.trim();
     }
 }
