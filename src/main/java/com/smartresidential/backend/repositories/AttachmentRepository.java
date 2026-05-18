@@ -10,6 +10,7 @@ public interface AttachmentRepository extends BaseRepository<Attachment, Long> {
 
     List<Attachment> findByIssueId(Long issueId);
 
-
     List<Attachment> findByFileName(String fileName);
+
+    List<Attachment> findAllByOrderByUploadedAtDesc();
 }
