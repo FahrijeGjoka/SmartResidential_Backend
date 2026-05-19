@@ -9,6 +9,7 @@ import java.util.List;
 
 @RestController
 @RequestMapping("/api/audit-logs")
+
 public class AuditLogController {
 
     private final AuditLogService service;
