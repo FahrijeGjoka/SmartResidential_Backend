@@ -4,7 +4,6 @@ import com.smartresidential.backend.dto.auth.LoginRequest;
 import com.smartresidential.backend.dto.auth.LoginResponse;
 import com.smartresidential.backend.dto.auth.RegisterRequest;
 import com.smartresidential.backend.entities.Role;
-import com.smartresidential.backend.entities.Session;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.entities.VerificationToken;
@@ -15,7 +14,6 @@ import com.smartresidential.backend.exceptions.TenantNotFoundException;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.RoleRepository;
-import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.repositories.VerificationTokenRepository;
@@ -37,13 +35,11 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
 
     private static final String DEFAULT_ROLE_NAME = "ROLE_RESIDENT";
-    private static final long JWT_EXPIRATION_HOURS = 24;
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RoleRepository roleRepository;
-    private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -57,7 +53,6 @@ public class AuthServiceImpl implements AuthService {
             UserRepository userRepository,
             VerificationTokenRepository verificationTokenRepository,
             RoleRepository roleRepository,
-            SessionRepository sessionRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
@@ -67,7 +62,6 @@ public class AuthServiceImpl implements AuthService {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.roleRepository = roleRepository;
-        this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -169,7 +163,7 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     @Transactional
-    public LoginResponse login(LoginRequest request) {
+    public AuthTokens login(LoginRequest request) {
         validateLoginRequest(request);
 
         Tenant tenant = getTenantFromContext();
@@ -194,34 +188,111 @@ public class AuthServiceImpl implements AuthService {
         Role role = roleRepository.findById(user.getRoleId())
                 .orElseThrow(() -> new ResourceNotFoundException("Role not found"));
 
-        String jwtToken = jwtService.generateToken(
+        String accessToken = jwtService.generateAccessToken(
+                user,
+                tenant.getId(),
+                tenant.getSchemaName(),
+                tenant.getIdentifier(),
+                role.getName()
+        );
+
+        String refreshToken = jwtService.generateRefreshToken(
                 user,
                 tenant.getId(),
                 tenant.getSchemaName(),
                 tenant.getIdentifier()
         );
 
-        persistLoginSession(user, jwtToken);
-
-        return new LoginResponse(
-                jwtToken,
+        return new AuthTokens(new LoginResponse(
+                accessToken,
                 user.getEmail(),
                 role.getName()
-        );
+        ), refreshToken);
     }
 
-    private void persistLoginSession(User user, String jwtToken) {
-        sessionRepository.deleteAllByToken(jwtToken);
+    @Override
+    @Transactional
+    public AuthTokens refresh(String refreshToken, String tenantIdentifier) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            throw new UnauthorizedException("Refresh token is required.");
+        }
 
-        LocalDateTime now = LocalDateTime.now();
+        if (tenantIdentifier == null || tenantIdentifier.isBlank()) {
+            throw new BadRequestException("Tenant identifier is required in X-Tenant-Identifier header.");
+        }
 
-        Session session = new Session();
-        session.setUser(user);
-        session.setToken(jwtToken);
-        session.setCreatedAt(now);
-        session.setExpiresAt(now.plusHours(JWT_EXPIRATION_HOURS));
+        String tokenTenantIdentifier;
+        Long tokenTenantId;
+        Long tokenUserId;
+        String tokenEmail;
 
-        sessionRepository.save(session);
+        try {
+            tokenTenantIdentifier = jwtService.extractIdentifier(refreshToken);
+            tokenTenantId = jwtService.extractTenantId(refreshToken);
+            tokenUserId = jwtService.extractUserId(refreshToken);
+            tokenEmail = jwtService.extractEmail(refreshToken);
+        } catch (RuntimeException e) {
+            throw new UnauthorizedException("Invalid refresh token.");
+        }
+
+        if (tokenTenantIdentifier == null || tokenEmail == null || tokenEmail.isBlank()
+                || !tenantIdentifier.trim().equals(tokenTenantIdentifier)) {
+            throw new UnauthorizedException("Refresh token tenant does not match request tenant.");
+        }
+
+        Tenant tenant = tenantRepository.findByIdentifier(tenantIdentifier.trim())
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token tenant."));
+
+        if (Boolean.FALSE.equals(tenant.getIsActive())
+                || tokenTenantId == null
+                || !tokenTenantId.equals(tenant.getId())) {
+            throw new UnauthorizedException("Invalid refresh token tenant.");
+        }
+
+        setTenantSchema(tenant.getSchemaName());
+        TenantContext.set(tenant.getId(), tenant.getSchemaName(), tenant.getIdentifier(), null, null);
+
+        User user = tokenUserId == null
+                ? userRepository.findByEmail(tokenEmail.trim().toLowerCase())
+                        .orElseThrow(() -> new UnauthorizedException("Invalid refresh token."))
+                : userRepository.findById(tokenUserId)
+                        .orElseThrow(() -> new UnauthorizedException("Invalid refresh token."));
+
+        if (!user.getEmail().equals(tokenEmail) || Boolean.FALSE.equals(user.getIsActive())) {
+            throw new UnauthorizedException("Invalid refresh token.");
+        }
+
+        try {
+            if (!jwtService.isRefreshTokenValid(refreshToken, user)) {
+                throw new UnauthorizedException("Invalid refresh token.");
+            }
+        } catch (RuntimeException e) {
+            throw new UnauthorizedException("Invalid refresh token.");
+        }
+
+        Role role = roleRepository.findById(user.getRoleId())
+                .orElseThrow(() -> new UnauthorizedException("Invalid refresh token user role."));
+
+        String accessToken = jwtService.generateAccessToken(
+                user,
+                tenant.getId(),
+                tenant.getSchemaName(),
+                tenant.getIdentifier(),
+                role.getName()
+        );
+
+        String rotatedRefreshToken = jwtService.generateRefreshToken(
+                user,
+                tenant.getId(),
+                tenant.getSchemaName(),
+                tenant.getIdentifier()
+        );
+
+        return new AuthTokens(new LoginResponse(
+                accessToken,
+                user.getEmail(),
+                role.getName()
+        ), rotatedRefreshToken);
     }
 
     private Tenant getTenantFromContext() {

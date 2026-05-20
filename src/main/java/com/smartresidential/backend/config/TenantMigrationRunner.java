@@ -33,6 +33,10 @@ public class TenantMigrationRunner implements ApplicationRunner {
             }
 
             String schemaName = tenant.getSchemaName();
+            if (schemaName == null || schemaName.isBlank()) {
+                continue;
+            }
+
             log.info("Running tenant migrations for schema {}", schemaName);
             tenantProvisioningService.runTenantMigrations(schemaName);
         }

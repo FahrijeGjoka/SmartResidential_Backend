@@ -29,6 +29,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private static final String BEARER_PREFIX = "Bearer ";
     private static final String TENANT_HEADER = "X-Tenant-Identifier";
     private static final String LOGIN_PATH = "/api/auth/login";
+    private static final String REFRESH_PATH = "/api/auth/refresh";
+    private static final String LOGOUT_PATH = "/api/auth/logout";
     private static final String SIGNUP_PATH = "/api/auth/signup";
     private static final String VERIFY_PATH = "/api/auth/verify";
 
@@ -54,7 +56,8 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
         String method = request.getMethod();
         String path = getRequestPath(request);
 
-        return ("POST".equalsIgnoreCase(method) && (LOGIN_PATH.equals(path) || SIGNUP_PATH.equals(path)))
+        return ("POST".equalsIgnoreCase(method)
+                        && (LOGIN_PATH.equals(path) || REFRESH_PATH.equals(path) || LOGOUT_PATH.equals(path) || SIGNUP_PATH.equals(path)))
                 || ("GET".equalsIgnoreCase(method) && VERIFY_PATH.equals(path));
     }
 

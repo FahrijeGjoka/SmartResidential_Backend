@@ -141,6 +141,7 @@ public class UserServiceImpl implements UserService {
 
         if (user.getPasswordHash() != null && !user.getPasswordHash().isBlank()) {
             existingUser.setPasswordHash(passwordEncoder.encode(user.getPasswordHash()));
+            existingUser.setTokenVersion(nextTokenVersion(existingUser));
         }
 
         existingUser.setFirstName(user.getFirstName());
@@ -149,6 +150,10 @@ public class UserServiceImpl implements UserService {
         existingUser.setIsActive(user.getIsActive());
 
         return userRepository.save(existingUser);
+    }
+
+    private int nextTokenVersion(User user) {
+        return (user.getTokenVersion() == null ? 0 : user.getTokenVersion()) + 1;
     }
 
     @Override

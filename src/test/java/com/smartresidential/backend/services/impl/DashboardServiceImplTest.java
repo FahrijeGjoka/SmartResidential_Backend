@@ -73,11 +73,11 @@ class DashboardServiceImplTest {
         TenantContext.set(1L, "tenant_alpha", "alpha", resident.getId(), "ROLE_RESIDENT");
 
         when(residentProfileRepository.findByUserId(resident.getId())).thenReturn(Optional.of(profile));
-        when(issueRepository.countByCreatedByIdAndStatusIn(
+        when(issueRepository.countByCreatedByIdAndStatusInAndArchivedFalse(
                 resident.getId(),
                 List.of("OPEN", "ASSIGNED", "IN_PROGRESS")
         )).thenReturn(2L);
-        when(issueRepository.findTopByCreatedByIdOrderByUpdatedAtDescIdDesc(resident.getId()))
+        when(issueRepository.findTopByCreatedByIdAndArchivedFalseOrderByUpdatedAtDescIdDesc(resident.getId()))
                 .thenReturn(Optional.of(latestIssue));
         when(notificationRepository.countByUserIdAndIsReadFalse(resident.getId())).thenReturn(3L);
         when(buildingAnnouncementRepository.findTopByBuildingIdOrderByCreatedAtDescIdDesc(30L))
@@ -92,7 +92,7 @@ class DashboardServiceImplTest {
         assertThat(response.getUnreadNotificationCount()).isEqualTo(3);
         assertThat(response.getLatestAnnouncement().getId()).isEqualTo(announcement.getId());
         assertThat(response.getLatestAnnouncement().getTitle()).isEqualTo("Water maintenance");
-        verify(issueRepository, never()).countByCreatedByIdAndStatusIn(
+        verify(issueRepository, never()).countByCreatedByIdAndStatusInAndArchivedFalse(
                 11L,
                 List.of("OPEN", "ASSIGNED", "IN_PROGRESS")
         );
@@ -106,11 +106,11 @@ class DashboardServiceImplTest {
         TenantContext.set(1L, "tenant_alpha", "alpha", resident.getId(), "ROLE_RESIDENT");
 
         when(residentProfileRepository.findByUserId(resident.getId())).thenReturn(Optional.of(profile));
-        when(issueRepository.countByCreatedByIdAndStatusIn(
+        when(issueRepository.countByCreatedByIdAndStatusInAndArchivedFalse(
                 resident.getId(),
                 List.of("OPEN", "ASSIGNED", "IN_PROGRESS")
         )).thenReturn(0L);
-        when(issueRepository.findTopByCreatedByIdOrderByUpdatedAtDescIdDesc(resident.getId()))
+        when(issueRepository.findTopByCreatedByIdAndArchivedFalseOrderByUpdatedAtDescIdDesc(resident.getId()))
                 .thenReturn(Optional.empty());
         when(notificationRepository.countByUserIdAndIsReadFalse(resident.getId())).thenReturn(0L);
         when(buildingAnnouncementRepository.findTopByBuildingIdOrderByCreatedAtDescIdDesc(30L))
@@ -136,7 +136,7 @@ class DashboardServiceImplTest {
         assertThat(response.getLatestIssue()).isNull();
         assertThat(response.getUnreadNotificationCount()).isZero();
         assertThat(response.getLatestAnnouncement()).isNull();
-        verify(issueRepository, never()).countByCreatedByIdAndStatusIn(
+        verify(issueRepository, never()).countByCreatedByIdAndStatusInAndArchivedFalse(
                 10L,
                 List.of("OPEN", "ASSIGNED", "IN_PROGRESS")
         );
@@ -157,7 +157,7 @@ class DashboardServiceImplTest {
         assertThat(response.getLatestIssue()).isNull();
         assertThat(response.getUnreadNotificationCount()).isZero();
         assertThat(response.getLatestAnnouncement()).isNull();
-        verify(issueRepository, never()).findTopByCreatedByIdOrderByUpdatedAtDescIdDesc(resident.getId());
+        verify(issueRepository, never()).findTopByCreatedByIdAndArchivedFalseOrderByUpdatedAtDescIdDesc(resident.getId());
         verify(notificationRepository, never()).countByUserIdAndIsReadFalse(resident.getId());
     }
 
@@ -168,11 +168,11 @@ class DashboardServiceImplTest {
         TenantContext.set(1L, "tenant_alpha", "alpha", resident.getId(), "ROLE_RESIDENT");
 
         when(residentProfileRepository.findByUserId(resident.getId())).thenReturn(Optional.of(profile));
-        when(issueRepository.countByCreatedByIdAndStatusIn(
+        when(issueRepository.countByCreatedByIdAndStatusInAndArchivedFalse(
                 resident.getId(),
                 List.of("OPEN", "ASSIGNED", "IN_PROGRESS")
         )).thenReturn(1L);
-        when(issueRepository.findTopByCreatedByIdOrderByUpdatedAtDescIdDesc(resident.getId()))
+        when(issueRepository.findTopByCreatedByIdAndArchivedFalseOrderByUpdatedAtDescIdDesc(resident.getId()))
                 .thenReturn(Optional.empty());
         when(notificationRepository.countByUserIdAndIsReadFalse(resident.getId())).thenReturn(1L);
         when(buildingAnnouncementRepository.findTopByBuildingIdOrderByCreatedAtDescIdDesc(30L))
@@ -180,7 +180,7 @@ class DashboardServiceImplTest {
 
         service.getResidentDashboard();
 
-        verify(issueRepository, never()).findTopByCreatedByIdOrderByUpdatedAtDescIdDesc(11L);
+        verify(issueRepository, never()).findTopByCreatedByIdAndArchivedFalseOrderByUpdatedAtDescIdDesc(11L);
         verify(notificationRepository, never()).countByUserIdAndIsReadFalse(11L);
         verify(buildingAnnouncementRepository, never()).findTopByBuildingIdOrderByCreatedAtDescIdDesc(31L);
     }

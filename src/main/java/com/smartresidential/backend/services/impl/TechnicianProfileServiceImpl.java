@@ -74,7 +74,10 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
     @Override
     public List<TechnicianProfileResponseDTO> getAvailable() {
         return repository.findByIsAvailableTrue()
-                .stream().map(this::mapToDTO).toList();
+                .stream()
+                .filter(this::isUnderCapacity)
+                .map(this::mapToDTO)
+                .toList();
     }
 
     @Override
@@ -137,7 +140,9 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
         return (int) issueAssignmentRepository.findByTechnicianId(profile.getUser().getId())
                 .stream()
                 .map(IssueAssignment::getIssue)
-                .filter(issue -> issue != null && ACTIVE_WORKLOAD_STATUSES.contains(issue.getStatus()))
+                .filter(issue -> issue != null
+                        && !Boolean.TRUE.equals(issue.getArchived())
+                        && ACTIVE_WORKLOAD_STATUSES.contains(issue.getStatus()))
                 .filter(issue -> !highPriorityOnly || isHighPriority(issue))
                 .count();
     }
@@ -153,6 +158,10 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
                 .filter(timestamp -> timestamp != null)
                 .max(LocalDateTime::compareTo)
                 .orElse(null);
+    }
+
+    private boolean isUnderCapacity(TechnicianProfile profile) {
+        return activeWorkload(profile, false) < resolveMaxActiveIssues(profile.getMaxActiveIssues());
     }
 
     private LocalDateTime assignmentTimestamp(IssueAssignment assignment) {

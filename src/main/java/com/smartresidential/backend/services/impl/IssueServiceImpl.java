@@ -21,6 +21,7 @@ import com.smartresidential.backend.exceptions.BadRequestException;
 import com.smartresidential.backend.exceptions.ForbiddenException;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
+import com.smartresidential.backend.jobs.IssueAutoClassificationJob;
 import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.mapper.IssueMapper;
 import com.smartresidential.backend.multitenancy.TenantContext;
@@ -45,6 +46,8 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 
 import java.time.LocalDateTime;
@@ -91,6 +94,7 @@ public class IssueServiceImpl implements IssueService {
     private final TechnicianProfileRepository technicianProfileRepository;
     private final RoleRepository roleRepository;
     private final IssueCategoryMatcherService issueCategoryMatcherService;
+    private final IssueAutoClassificationJob issueAutoClassificationJob;
     private final NotificationJob notificationJob;
     private final IssueMapper issueMapper;
     private final TenantCacheEvictor tenantCacheEvictor;
@@ -111,15 +115,14 @@ public class IssueServiceImpl implements IssueService {
         Apartment apartment = resolveIssueApartment(request, loggedInUserId);
 
         IssueCategory category = null;
-        IssueCategoryMatch categoryMatch = null;
+        boolean autoClassify = false;
         if (!isResident() && request.getCategoryId() != null) {
             category = issueCategoryRepository.findById(request.getCategoryId())
                     .orElseThrow(() -> new ResourceNotFoundException(
                             "Issue category not found with id: " + request.getCategoryId()
                     ));
         } else {
-            categoryMatch = resolveAutoCategory(request);
-            category = categoryMatch != null ? categoryMatch.getCategory() : null;
+            autoClassify = true;
         }
 
         Issue issue = new Issue();
@@ -130,15 +133,14 @@ public class IssueServiceImpl implements IssueService {
         issue.setApartment(apartment);
         issue.setCreatedBy(createdBy);
         issue.setCategory(category);
-        if (categoryMatch != null) {
-            issue.setAiCategoryConfidence(categoryMatch.getConfidence());
-            issue.setAiCategoryReason(categoryMatch.getReason());
-        }
 
         Issue savedIssue = issueRepository.save(issue);
-        Issue assignedIssue = autoAssignTechnician(savedIssue, createdBy);
+        Issue assignedIssue = autoClassify ? savedIssue : autoAssignTechnician(savedIssue, createdBy);
         evictCurrentTenantIssueCache();
         notificationJob.notifyIssueCreated(assignedIssue.getId());
+        if (autoClassify) {
+            scheduleAutoClassification(assignedIssue.getId(), createdBy.getId());
+        }
         return mapToResponse(assignedIssue);
     }
 
@@ -192,7 +194,7 @@ public class IssueServiceImpl implements IssueService {
             return getMyIssues();
         }
 
-        return issueRepository.findAll()
+        return issueRepository.findByArchivedFalse()
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -203,7 +205,7 @@ public class IssueServiceImpl implements IssueService {
     public List<IssueResponseDTO> getMyIssues() {
         Long currentUserId = requireAuthenticatedUserId();
 
-        return issueRepository.findByCreatedById(currentUserId)
+        return issueRepository.findByCreatedByIdAndArchivedFalse(currentUserId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -225,7 +227,8 @@ public class IssueServiceImpl implements IssueService {
         Issue issue = issueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
-        issueRepository.delete(issue);
+        issue.setArchived(true);
+        issueRepository.save(issue);
         evictCurrentTenantIssueCache();
     }
 
@@ -241,7 +244,7 @@ public class IssueServiceImpl implements IssueService {
             return getMyIssues();
         }
 
-        return issueRepository.findByStatus(status)
+        return issueRepository.findByStatusAndArchivedFalse(status)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -259,7 +262,7 @@ public class IssueServiceImpl implements IssueService {
             return getMyIssues();
         }
 
-        return issueRepository.findByPriority(priority)
+        return issueRepository.findByPriorityAndArchivedFalse(priority)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -277,7 +280,7 @@ public class IssueServiceImpl implements IssueService {
             return getMyIssues();
         }
 
-        return issueRepository.findByCategoryId(categoryId)
+        return issueRepository.findByCategoryIdAndArchivedFalse(categoryId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -295,7 +298,7 @@ public class IssueServiceImpl implements IssueService {
             return getMyIssues();
         }
 
-        return issueRepository.findByApartmentId(apartmentId)
+        return issueRepository.findByApartmentIdAndArchivedFalse(apartmentId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -315,7 +318,7 @@ public class IssueServiceImpl implements IssueService {
             }
         }
 
-        return issueRepository.findByCreatedById(userId)
+        return issueRepository.findByCreatedByIdAndArchivedFalse(userId)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -333,7 +336,7 @@ public class IssueServiceImpl implements IssueService {
             return getMyIssues();
         }
 
-        return issueRepository.findByTitleContainingIgnoreCase(title)
+        return issueRepository.findByTitleContainingIgnoreCaseAndArchivedFalse(title)
                 .stream()
                 .map(this::mapToResponse)
                 .toList();
@@ -430,14 +433,18 @@ public class IssueServiceImpl implements IssueService {
         return new BadRequestException("Your resident profile is not linked to an apartment yet.");
     }
 
-    private IssueCategoryMatch resolveAutoCategory(CreateIssueRequest request) {
-        try {
-            return issueCategoryMatcherService
-                    .matchCategory(request.getTitle(), request.getDescription())
-                    .orElse(null);
-        } catch (RuntimeException exception) {
-            return null;
+    private void scheduleAutoClassification(Long issueId, Long requestedByUserId) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    issueAutoClassificationJob.classifyAndAssign(issueId, requestedByUserId);
+                }
+            });
+            return;
         }
+
+        issueAutoClassificationJob.classifyAndAssign(issueId, requestedByUserId);
     }
 
     private Issue autoAssignTechnician(Issue issue, User requestedBy) {
@@ -534,6 +541,7 @@ public class IssueServiceImpl implements IssueService {
                 .stream()
                 .map(IssueAssignment::getIssue)
                 .filter(assignedIssue -> assignedIssue != null
+                        && !Boolean.TRUE.equals(assignedIssue.getArchived())
                         && ACTIVE_WORKLOAD_STATUSES.contains(assignedIssue.getStatus()))
                 .filter(assignedIssue -> !highPriorityOnly || isHighPriority(assignedIssue.getPriority()))
                 .count();
@@ -601,8 +609,16 @@ public class IssueServiceImpl implements IssueService {
             throw new IllegalArgumentException("User must have ROLE_TECHNICIAN to be assigned.");
         }
 
-        if (technicianProfileRepository.findByUserId(technician.getId()).isEmpty()) {
-            throw new IllegalArgumentException("Technician profile not found for user id: " + technician.getId());
+        TechnicianProfile profile = technicianProfileRepository.findByUserId(technician.getId())
+                .orElseThrow(() -> new IllegalArgumentException(
+                        "Technician profile not found for user id: " + technician.getId()));
+
+        if (!Boolean.TRUE.equals(profile.getIsAvailable())) {
+            throw new IllegalArgumentException("Technician is not available for assignment.");
+        }
+
+        if (activeWorkload(profile, false) >= maxActiveIssues(profile)) {
+            throw new IllegalArgumentException("Technician is at capacity.");
         }
     }
 

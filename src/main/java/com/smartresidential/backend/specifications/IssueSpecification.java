@@ -20,9 +20,10 @@ public class IssueSpecification {
         return (root, query, cb) -> {
 
             List<Predicate> predicates = new ArrayList<>();
+            predicates.add(cb.isFalse(root.get("archived")));
 
             if (filter == null) {
-                return cb.conjunction();
+                return cb.and(predicates.toArray(new Predicate[0]));
             }
 
             if (filter.getCreatedById() != null) {

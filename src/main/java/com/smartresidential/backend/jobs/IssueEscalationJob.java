@@ -29,7 +29,7 @@ public class IssueEscalationJob {
     public void executeNow() {
         LocalDateTime limitTime = LocalDateTime.now().minusHours(48);
 
-        List<Issue> oldIssues = issueRepository.findByStatusInAndCreatedAtBefore(
+        List<Issue> oldIssues = issueRepository.findByStatusInAndCreatedAtBeforeAndArchivedFalse(
                 List.of("OPEN", "ASSIGNED", "IN_PROGRESS"),
                 limitTime
         );

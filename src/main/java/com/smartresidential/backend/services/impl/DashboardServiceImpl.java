@@ -54,12 +54,12 @@ public class DashboardServiceImpl implements DashboardService {
         }
 
         ResidentDashboardResponse response = new ResidentDashboardResponse();
-        response.setOpenIssueCount(issueRepository.countByCreatedByIdAndStatusIn(
+        response.setOpenIssueCount(issueRepository.countByCreatedByIdAndStatusInAndArchivedFalse(
                 residentUserId,
                 ACTIVE_ISSUE_STATUSES
         ));
         response.setUnreadNotificationCount(notificationRepository.countByUserIdAndIsReadFalse(residentUserId));
-        response.setLatestIssue(issueRepository.findTopByCreatedByIdOrderByUpdatedAtDescIdDesc(residentUserId)
+        response.setLatestIssue(issueRepository.findTopByCreatedByIdAndArchivedFalseOrderByUpdatedAtDescIdDesc(residentUserId)
                 .map(this::mapIssue)
                 .orElse(null));
 
