@@ -1,5 +1,6 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.config.TenantMigrationRunner;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.repositories.TenantRepository;
 import org.junit.jupiter.api.Test;
@@ -34,9 +35,9 @@ class TenantMigrationRunnerTest {
 
         runner.run(null);
 
-        verify(tenantProvisioningService).migrateTenant("tenant_test");
-        verify(tenantProvisioningService, never()).migrateTenant("tenant_inactive");
-        verify(tenantProvisioningService, never()).migrateTenant(" ");
+        verify(tenantProvisioningService).runTenantMigrations("tenant_test");
+        verify(tenantProvisioningService, never()).runTenantMigrations("tenant_inactive");
+        verify(tenantProvisioningService, never()).runTenantMigrations(" ");
     }
 
     private Tenant tenant(Long id, String schemaName, Boolean active) {

@@ -16,6 +16,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.when;
@@ -137,6 +138,29 @@ class TechnicianProfileServiceImplTest {
     }
 
     @Test
+    void getAvailableExcludesTechniciansAtCapacity() {
+        TechnicianProfileServiceImpl service = service();
+        User underCapacityUser = user(20L);
+        User atCapacityUser = user(21L);
+        TechnicianProfile underCapacity = technicianProfile(50L, underCapacityUser);
+        TechnicianProfile atCapacity = technicianProfile(51L, atCapacityUser);
+
+        when(technicianProfileRepository.findByIsAvailableTrue())
+                .thenReturn(List.of(underCapacity, atCapacity));
+        when(issueAssignmentRepository.findByTechnicianId(underCapacityUser.getId()))
+                .thenReturn(activeAssignments(underCapacityUser, 4));
+        when(issueAssignmentRepository.findByTechnicianId(atCapacityUser.getId()))
+                .thenReturn(activeAssignments(atCapacityUser, 5));
+
+        List<TechnicianProfileResponseDTO> response = service.getAvailable();
+
+        assertThat(response).hasSize(1);
+        assertThat(response.get(0).getUserId()).isEqualTo(underCapacityUser.getId());
+        assertThat(response.get(0).getActiveIssueCount()).isEqualTo(4);
+        assertThat(response.get(0).getMaxActiveIssues()).isEqualTo(5);
+    }
+
+    @Test
     void resolvedAndClosedIssuesAreNotCountedAsActive() {
         TechnicianProfileServiceImpl service = service();
         User technician = user(20L);
@@ -196,5 +220,16 @@ class TechnicianProfileServiceImplTest {
         assignment.setTechnician(technician);
         assignment.setAssignedAt(assignedAt);
         return assignment;
+    }
+
+    private List<IssueAssignment> activeAssignments(User technician, int count) {
+        return IntStream.range(0, count)
+                .mapToObj(index -> assignment(
+                        1_000L + index,
+                        issue(2_000L + index, "ASSIGNED", "MEDIUM"),
+                        technician,
+                        LocalDateTime.now().minusMinutes(index)
+                ))
+                .toList();
     }
 }

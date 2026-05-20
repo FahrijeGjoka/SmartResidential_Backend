@@ -47,6 +47,9 @@ public class Issue {
     @Column(name = "ai_category_reason", columnDefinition = "TEXT")
     private String aiCategoryReason;
 
+    @Column(name = "is_archived", nullable = false)
+    private Boolean archived = false;
+
     public Issue() {
     }
 
@@ -54,6 +57,9 @@ public class Issue {
     public void prePersist() {
         this.createdAt = LocalDateTime.now();
         this.updatedAt = LocalDateTime.now();
+        if (this.archived == null) {
+            this.archived = false;
+        }
     }
 
     @PreUpdate
@@ -109,6 +115,14 @@ public class Issue {
         return aiCategoryReason;
     }
 
+    public Boolean getArchived() {
+        return archived;
+    }
+
+    public Boolean isArchived() {
+        return archived;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -155,6 +169,10 @@ public class Issue {
 
     public void setAiCategoryReason(String aiCategoryReason) {
         this.aiCategoryReason = aiCategoryReason;
+    }
+
+    public void setArchived(Boolean archived) {
+        this.archived = archived;
     }
 }
 

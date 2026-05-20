@@ -10,5 +10,10 @@ public interface AuthService {
 
     void verifyEmail(String identifier, String token);
 
-    LoginResponse login(LoginRequest request);
+    AuthTokens login(LoginRequest request);
+
+    AuthTokens refresh(String refreshToken, String tenantIdentifier);
+
+    record AuthTokens(LoginResponse response, String refreshToken) {
+    }
 }

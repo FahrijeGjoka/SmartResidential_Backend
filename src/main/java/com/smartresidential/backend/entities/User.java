@@ -35,6 +35,9 @@ public class User {
     @Column(name = "is_active")
     private Boolean isActive = true;
 
+    @Column(name = "token_version", nullable = false)
+    private Integer tokenVersion = 0;
+
     public User() {
     }
 
@@ -43,6 +46,9 @@ public class User {
         this.createdAt = LocalDateTime.now();
         if (this.isActive == null) {
             this.isActive = true;
+        }
+        if (this.tokenVersion == null) {
+            this.tokenVersion = 0;
         }
     }
 
@@ -111,6 +117,14 @@ public class User {
 
     public void setRoleId(Long roleId) {
         this.roleId = roleId;
+    }
+
+    public Integer getTokenVersion() {
+        return tokenVersion;
+    }
+
+    public void setTokenVersion(Integer tokenVersion) {
+        this.tokenVersion = tokenVersion;
     }
 }
 

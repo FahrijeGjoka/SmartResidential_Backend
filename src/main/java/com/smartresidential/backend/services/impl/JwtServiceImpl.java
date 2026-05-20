@@ -16,15 +16,24 @@ import java.util.function.Function;
 @Service
 public class JwtServiceImpl implements JwtService {
 
-    private static final long EXPIRATION_TIME = 1000L * 60 * 60 * 24;
+    private static final String TOKEN_TYPE_ACCESS = "access";
+    private static final String TOKEN_TYPE_REFRESH = "refresh";
 
     private final String secretKey;
+    private final long accessExpirationMillis;
+    private final long refreshExpirationMillis;
 
-    public JwtServiceImpl(@Value("${app.jwt.secret:${JWT_SECRET:}}") String secretKey) {
+    public JwtServiceImpl(
+            @Value("${app.jwt.secret:${JWT_SECRET:}}") String secretKey,
+            @Value("${app.jwt.access-expiration-ms:900000}") long accessExpirationMillis,
+            @Value("${app.jwt.refresh-expiration-ms:1209600000}") long refreshExpirationMillis
+    ) {
         if (secretKey == null || secretKey.getBytes(StandardCharsets.UTF_8).length < 32) {
             throw new IllegalStateException("JWT secret must be configured with at least 32 bytes.");
         }
         this.secretKey = secretKey;
+        this.accessExpirationMillis = accessExpirationMillis;
+        this.refreshExpirationMillis = refreshExpirationMillis;
     }
 
     private SecretKey getSigningKey() {
@@ -32,27 +41,60 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
-    public String generateToken(User user,
-                                Long tenantId,
-                                String schemaName,
-                                String identifier) {
+    public String generateAccessToken(User user,
+                                      Long tenantId,
+                                      String schemaName,
+                                      String identifier,
+                                      String roleName) {
 
-        return Jwts.builder()
+        return buildToken(user, tenantId, schemaName, identifier, TOKEN_TYPE_ACCESS, roleName, accessExpirationMillis);
+    }
+
+    @Override
+    public String generateRefreshToken(User user,
+                                       Long tenantId,
+                                       String schemaName,
+                                       String identifier) {
+        return buildToken(user, tenantId, schemaName, identifier, TOKEN_TYPE_REFRESH, null, refreshExpirationMillis);
+    }
+
+    private String buildToken(User user,
+                              Long tenantId,
+                              String schemaName,
+                              String identifier,
+                              String tokenType,
+                              String roleName,
+                              long expirationMillis) {
+        var builder = Jwts.builder()
                 .setSubject(user.getEmail())
+                .claim("type", tokenType)
                 .claim("tenantId", tenantId)
+                .claim("tenant_id", tenantId)
                 .claim("schemaName", schemaName)
                 .claim("identifier", identifier)
                 .claim("userId", user.getId())
-                .claim("roleName", user.getRoleId())
+                .claim("id", user.getId())
+                .claim("nameidentifier", user.getId())
+                .claim("tokenVersion", user.getTokenVersion() == null ? 0 : user.getTokenVersion())
                 .setIssuedAt(new Date())
-                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
-                .signWith(getSigningKey())
-                .compact();
+                .setExpiration(new Date(System.currentTimeMillis() + expirationMillis));
+
+        if (roleName != null) {
+            builder.claim("role", roleName).claim("roleName", roleName);
+        }
+
+        return builder.signWith(getSigningKey()).compact();
     }
 
     @Override
     public String extractEmail(String token) {
         return extractClaim(token, Claims::getSubject);
+    }
+
+    @Override
+    public Long extractUserId(String token) {
+        Object val = extractAllClaims(token).get("userId");
+        return val == null ? null : ((Number) val).longValue();
     }
 
     @Override
@@ -72,9 +114,32 @@ public class JwtServiceImpl implements JwtService {
     }
 
     @Override
+    public Integer extractTokenVersion(String token) {
+        Object val = extractAllClaims(token).get("tokenVersion");
+        return val == null ? 0 : ((Number) val).intValue();
+    }
+
+    @Override
+    public String extractTokenType(String token) {
+        return extractAllClaims(token).get("type", String.class);
+    }
+
+    @Override
     public boolean isTokenValid(String token, User user) {
         String email = extractEmail(token);
-        return email.equals(user.getEmail()) && !isTokenExpired(token);
+        return email.equals(user.getEmail())
+                && TOKEN_TYPE_ACCESS.equals(extractTokenType(token))
+                && !isTokenExpired(token);
+    }
+
+    @Override
+    public boolean isRefreshTokenValid(String token, User user) {
+        String email = extractEmail(token);
+        Integer expectedVersion = user.getTokenVersion() == null ? 0 : user.getTokenVersion();
+        return email.equals(user.getEmail())
+                && TOKEN_TYPE_REFRESH.equals(extractTokenType(token))
+                && expectedVersion.equals(extractTokenVersion(token))
+                && !isTokenExpired(token);
     }
 
     private boolean isTokenExpired(String token) {
