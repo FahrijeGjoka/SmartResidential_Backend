@@ -1,6 +1,7 @@
 package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileResponseDTO;
+import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.JwtService;
@@ -45,6 +46,9 @@ class TechnicianProfileControllerJsonTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private SessionRepository sessionRepository;
 
     @MockitoBean
     private TenantRepository tenantRepository;

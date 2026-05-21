@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.exceptions.ApiErrorResponse;
 import com.smartresidential.backend.multitenancy.TenantContext;
+import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.JwtService;
 import io.jsonwebtoken.JwtException;
@@ -21,6 +22,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
+import java.time.LocalDateTime;
 
 @Component
 public class JwtAuthenticationFilter extends OncePerRequestFilter {
@@ -37,17 +39,20 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     private final JwtService jwtService;
     private final UserDetailsService userDetailsService;
     private final UserRepository userRepository;
+    private final SessionRepository sessionRepository;
     private final ObjectMapper objectMapper;
 
     public JwtAuthenticationFilter(
             JwtService jwtService,
             UserDetailsService userDetailsService,
             UserRepository userRepository,
+            SessionRepository sessionRepository,
             ObjectMapper objectMapper
     ) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
         this.userRepository = userRepository;
+        this.sessionRepository = sessionRepository;
         this.objectMapper = objectMapper;
     }
 
@@ -126,6 +131,11 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
                         .orElse(null);
 
                 if (user != null && jwtService.isTokenValid(token, user)) {
+                    if (!sessionRepository.findByTokenAndExpiresAtAfter(token, LocalDateTime.now()).isPresent()) {
+                        writeError(response, HttpServletResponse.SC_UNAUTHORIZED,
+                                "Session is expired or revoked.", request.getRequestURI());
+                        return;
+                    }
 
                     UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 

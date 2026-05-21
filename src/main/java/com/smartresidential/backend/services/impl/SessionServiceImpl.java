@@ -1,9 +1,11 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.entities.Session;
+import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.exceptions.BadRequestException;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.SessionRepository;
+import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.SessionService;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,9 +19,11 @@ import java.util.Optional;
 public class SessionServiceImpl implements SessionService {
 
     private final SessionRepository sessionRepository;
+    private final UserRepository userRepository;
 
-    public SessionServiceImpl(SessionRepository sessionRepository) {
+    public SessionServiceImpl(SessionRepository sessionRepository, UserRepository userRepository) {
         this.sessionRepository = sessionRepository;
+        this.userRepository = userRepository;
     }
 
     @Override
@@ -78,11 +82,19 @@ public class SessionServiceImpl implements SessionService {
         Long userId = session.getUser().getId();
         List<Session> sessions = sessionRepository.findAllByUserId(userId);
         sessionRepository.deleteAll(sessions);
+        incrementTokenVersion(userId);
     }
 
     @Override
     public boolean isSessionValid(String token) {
         return sessionRepository.findByTokenAndExpiresAtAfter(cleanToken(token), LocalDateTime.now()).isPresent();
+    }
+
+    private void incrementTokenVersion(Long userId) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + userId));
+        user.setTokenVersion((user.getTokenVersion() == null ? 0 : user.getTokenVersion()) + 1);
+        userRepository.save(user);
     }
 
     private String cleanToken(String token) {

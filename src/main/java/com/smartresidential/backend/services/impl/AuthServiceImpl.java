@@ -25,11 +25,13 @@ import com.smartresidential.backend.services.interfaces.JwtService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -37,7 +39,6 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
 
     private static final String DEFAULT_ROLE_NAME = "ROLE_RESIDENT";
-    private static final long SESSION_EXPIRATION_HOURS = 24;
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
@@ -48,6 +49,7 @@ public class AuthServiceImpl implements AuthService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final Duration accessTokenLifetime;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -61,7 +63,8 @@ public class AuthServiceImpl implements AuthService {
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
-            EmailService emailService
+            EmailService emailService,
+            @Value("${app.jwt.access-expiration-ms:900000}") long accessExpirationMillis
     ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
@@ -72,6 +75,7 @@ public class AuthServiceImpl implements AuthService {
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.accessTokenLifetime = Duration.ofMillis(accessExpirationMillis);
     }
 
     @Override
@@ -227,7 +231,7 @@ public class AuthServiceImpl implements AuthService {
         session.setUser(user);
         session.setToken(accessToken);
         session.setCreatedAt(now);
-        session.setExpiresAt(now.plusHours(SESSION_EXPIRATION_HOURS));
+        session.setExpiresAt(now.plus(accessTokenLifetime));
 
         sessionRepository.save(session);
     }
