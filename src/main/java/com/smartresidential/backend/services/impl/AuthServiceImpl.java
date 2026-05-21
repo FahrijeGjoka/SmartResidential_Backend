@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.auth.LoginRequest;
 import com.smartresidential.backend.dto.auth.LoginResponse;
 import com.smartresidential.backend.dto.auth.RegisterRequest;
 import com.smartresidential.backend.entities.Role;
+import com.smartresidential.backend.entities.Session;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.entities.VerificationToken;
@@ -14,6 +15,7 @@ import com.smartresidential.backend.exceptions.TenantNotFoundException;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.RoleRepository;
+import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.repositories.VerificationTokenRepository;
@@ -35,11 +37,13 @@ import java.util.UUID;
 public class AuthServiceImpl implements AuthService {
 
     private static final String DEFAULT_ROLE_NAME = "ROLE_RESIDENT";
+    private static final long SESSION_EXPIRATION_HOURS = 24;
 
     private final TenantRepository tenantRepository;
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RoleRepository roleRepository;
+    private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
@@ -53,6 +57,7 @@ public class AuthServiceImpl implements AuthService {
             UserRepository userRepository,
             VerificationTokenRepository verificationTokenRepository,
             RoleRepository roleRepository,
+            SessionRepository sessionRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
@@ -62,6 +67,7 @@ public class AuthServiceImpl implements AuthService {
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.roleRepository = roleRepository;
+        this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
@@ -203,11 +209,27 @@ public class AuthServiceImpl implements AuthService {
                 tenant.getIdentifier()
         );
 
+        persistLoginSession(user, accessToken);
+
         return new AuthTokens(new LoginResponse(
                 accessToken,
                 user.getEmail(),
                 role.getName()
         ), refreshToken);
+    }
+
+    private void persistLoginSession(User user, String accessToken) {
+        sessionRepository.deleteAllByToken(accessToken);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Session session = new Session();
+        session.setUser(user);
+        session.setToken(accessToken);
+        session.setCreatedAt(now);
+        session.setExpiresAt(now.plusHours(SESSION_EXPIRATION_HOURS));
+
+        sessionRepository.save(session);
     }
 
     @Override
