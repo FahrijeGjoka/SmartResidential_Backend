@@ -6,6 +6,7 @@ import com.smartresidential.backend.dto.auth.RegisterRequest;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.services.interfaces.AuthService;
 import com.smartresidential.backend.services.interfaces.AuthService.AuthTokens;
+import com.smartresidential.backend.services.interfaces.SessionService;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
@@ -27,17 +28,20 @@ public class AuthController {
     private static final String REFRESH_COOKIE_PATH = "/api/auth";
 
     private final AuthService authService;
+    private final SessionService sessionService;
     private final Duration refreshCookieMaxAge;
     private final boolean refreshCookieSecure;
     private final String refreshCookieSameSite;
 
     public AuthController(
             AuthService authService,
+            SessionService sessionService,
             @Value("${app.auth.refresh-cookie.max-age-seconds:1209600}") long refreshCookieMaxAgeSeconds,
             @Value("${app.auth.refresh-cookie.secure:false}") boolean refreshCookieSecure,
             @Value("${app.auth.refresh-cookie.same-site:Lax}") String refreshCookieSameSite
     ) {
         this.authService = authService;
+        this.sessionService = sessionService;
         this.refreshCookieMaxAge = Duration.ofSeconds(refreshCookieMaxAgeSeconds);
         this.refreshCookieSameSite = refreshCookieSameSite;
         this.refreshCookieSecure = refreshCookieSecure || "None".equalsIgnoreCase(refreshCookieSameSite);
@@ -81,7 +85,17 @@ public class AuthController {
     }
 
     @PostMapping("/logout")
-    public ResponseEntity<Void> logout() {
+    public ResponseEntity<Void> logout(
+            @RequestHeader(value = "Authorization", required = false) String authorizationHeader
+    ) {
+        if (authorizationHeader != null && !authorizationHeader.isBlank()) {
+            try {
+                sessionService.logout(authorizationHeader);
+            } catch (RuntimeException ignored) {
+                // Logout must still clear the refresh cookie when the access token is already expired or revoked.
+            }
+        }
+
         return ResponseEntity.noContent()
                 .header(HttpHeaders.SET_COOKIE, buildRefreshCookie("", Duration.ZERO).toString())
                 .build();

@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.auth.LoginRequest;
 import com.smartresidential.backend.dto.auth.LoginResponse;
 import com.smartresidential.backend.dto.auth.RegisterRequest;
 import com.smartresidential.backend.entities.Role;
+import com.smartresidential.backend.entities.Session;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.entities.VerificationToken;
@@ -14,6 +15,7 @@ import com.smartresidential.backend.exceptions.TenantNotFoundException;
 import com.smartresidential.backend.exceptions.UnauthorizedException;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.RoleRepository;
+import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.repositories.VerificationTokenRepository;
@@ -23,11 +25,13 @@ import com.smartresidential.backend.services.interfaces.JwtService;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import jakarta.transaction.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -40,10 +44,12 @@ public class AuthServiceImpl implements AuthService {
     private final UserRepository userRepository;
     private final VerificationTokenRepository verificationTokenRepository;
     private final RoleRepository roleRepository;
+    private final SessionRepository sessionRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
     private final EmailService emailService;
+    private final Duration accessTokenLifetime;
 
     @PersistenceContext
     private EntityManager entityManager;
@@ -53,19 +59,23 @@ public class AuthServiceImpl implements AuthService {
             UserRepository userRepository,
             VerificationTokenRepository verificationTokenRepository,
             RoleRepository roleRepository,
+            SessionRepository sessionRepository,
             PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager,
             JwtService jwtService,
-            EmailService emailService
+            EmailService emailService,
+            @Value("${app.jwt.access-expiration-ms:900000}") long accessExpirationMillis
     ) {
         this.tenantRepository = tenantRepository;
         this.userRepository = userRepository;
         this.verificationTokenRepository = verificationTokenRepository;
         this.roleRepository = roleRepository;
+        this.sessionRepository = sessionRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
         this.emailService = emailService;
+        this.accessTokenLifetime = Duration.ofMillis(accessExpirationMillis);
     }
 
     @Override
@@ -203,11 +213,27 @@ public class AuthServiceImpl implements AuthService {
                 tenant.getIdentifier()
         );
 
+        persistLoginSession(user, accessToken);
+
         return new AuthTokens(new LoginResponse(
                 accessToken,
                 user.getEmail(),
                 role.getName()
         ), refreshToken);
+    }
+
+    private void persistLoginSession(User user, String accessToken) {
+        sessionRepository.deleteAllByToken(accessToken);
+
+        LocalDateTime now = LocalDateTime.now();
+
+        Session session = new Session();
+        session.setUser(user);
+        session.setToken(accessToken);
+        session.setCreatedAt(now);
+        session.setExpiresAt(now.plus(accessTokenLifetime));
+
+        sessionRepository.save(session);
     }
 
     @Override

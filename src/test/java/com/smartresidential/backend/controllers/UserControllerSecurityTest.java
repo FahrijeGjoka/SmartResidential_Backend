@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.smartresidential.backend.dto.user.CreateUserRequest;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.repositories.SessionRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.JwtService;
@@ -57,6 +58,9 @@ class UserControllerSecurityTest {
 
     @MockitoBean
     private UserRepository userRepository;
+
+    @MockitoBean
+    private SessionRepository sessionRepository;
 
     @MockitoBean
     private TenantRepository tenantRepository;

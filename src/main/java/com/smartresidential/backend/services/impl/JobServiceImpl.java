@@ -8,6 +8,7 @@ import com.smartresidential.backend.jobs.AuditLogCleanupJob;
 import com.smartresidential.backend.jobs.IssueEscalationJob;
 import com.smartresidential.backend.jobs.MaintenanceRequestEscalationJob;
 import com.smartresidential.backend.jobs.NotificationCleanupJob;
+import com.smartresidential.backend.jobs.SessionCleanupJob;
 import com.smartresidential.backend.jobs.VerificationTokenCleanupJob;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.services.interfaces.JobService;
@@ -54,6 +55,7 @@ public class JobServiceImpl implements JobService {
             ObjectProvider<IssueEscalationJob> issueEscalationJob,
             ObjectProvider<MaintenanceRequestEscalationJob> maintenanceRequestEscalationJob,
             ObjectProvider<NotificationCleanupJob> notificationCleanupJob,
+            ObjectProvider<SessionCleanupJob> sessionCleanupJob,
             ObjectProvider<VerificationTokenCleanupJob> verificationTokenCleanupJob
     ) {
         register(new JobDefinition(
@@ -91,6 +93,12 @@ public class JobServiceImpl implements JobService {
                 "Async notification dispatcher used by issue and maintenance workflows.",
                 "Async, event-driven",
                 null
+        ));
+        register(new JobDefinition(
+                "SessionCleanupJob",
+                "Deletes expired user sessions.",
+                "0 30 2 * * *",
+                () -> sessionCleanupJob.getObject().executeNow()
         ));
         register(new JobDefinition(
                 "VerificationTokenCleanupJob",
