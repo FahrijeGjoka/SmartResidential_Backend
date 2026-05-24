@@ -5,6 +5,7 @@ import com.smartresidential.backend.dto.issue.CreateIssueRequest;
 import com.smartresidential.backend.dto.issue.IssueFilterRequest;
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
 import com.smartresidential.backend.dto.issue.UpdateIssueRequest;
+import com.smartresidential.backend.entities.AIClassificationStatus;
 import com.smartresidential.backend.entities.Apartment;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.IssueAssignment;
@@ -26,6 +27,9 @@ import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.mapper.IssueMapper;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
+import com.smartresidential.backend.repositories.AIClassificationLogRepository;
+import com.smartresidential.backend.repositories.AttachmentRepository;
+import com.smartresidential.backend.repositories.CommentRepository;
 import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
@@ -35,8 +39,10 @@ import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.repositories.WorkLogRepository;
 import com.smartresidential.backend.services.interfaces.IssueCategoryMatcherService;
 import com.smartresidential.backend.services.interfaces.IssueService;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.specifications.IssueSpecification;
 
 import lombok.RequiredArgsConstructor;
@@ -90,6 +96,10 @@ public class IssueServiceImpl implements IssueService {
     private final IssueAssignmentRepository issueAssignmentRepository;
     private final IssueStatusHistoryRepository issueStatusHistoryRepository;
     private final MaintenanceRequestRepository maintenanceRequestRepository;
+    private final CommentRepository commentRepository;
+    private final AttachmentRepository attachmentRepository;
+    private final WorkLogRepository workLogRepository;
+    private final AIClassificationLogRepository aiClassificationLogRepository;
     private final ResidentProfileRepository residentProfileRepository;
     private final TechnicianProfileRepository technicianProfileRepository;
     private final RoleRepository roleRepository;
@@ -98,6 +108,7 @@ public class IssueServiceImpl implements IssueService {
     private final NotificationJob notificationJob;
     private final IssueMapper issueMapper;
     private final TenantCacheEvictor tenantCacheEvictor;
+    private final AuditLogService auditLogService;
 
     @Override
     public IssueResponseDTO createIssue(CreateIssueRequest request) {
@@ -133,11 +144,15 @@ public class IssueServiceImpl implements IssueService {
         issue.setApartment(apartment);
         issue.setCreatedBy(createdBy);
         issue.setCategory(category);
+        issue.setAiClassificationStatus(autoClassify
+                ? AIClassificationStatus.PENDING
+                : AIClassificationStatus.COMPLETED);
 
         Issue savedIssue = issueRepository.save(issue);
         Issue assignedIssue = autoClassify ? savedIssue : autoAssignTechnician(savedIssue, createdBy);
         evictCurrentTenantIssueCache();
-        notificationJob.notifyIssueCreated(assignedIssue.getId());
+        scheduleAfterCommit(() -> notificationJob.notifyIssueCreated(assignedIssue.getId()));
+        auditLogService.logCurrentUser("ISSUE_CREATED", "ISSUE", assignedIssue.getId());
         if (autoClassify) {
             scheduleAutoClassification(assignedIssue.getId(), createdBy.getId());
         }
@@ -171,10 +186,12 @@ public class IssueServiceImpl implements IssueService {
                             "Issue category not found with id: " + request.getCategoryId()
                     ));
             issue.setCategory(category);
+            issue.setAiClassificationStatus(AIClassificationStatus.COMPLETED);
         }
 
         Issue updatedIssue = issueRepository.save(issue);
         evictCurrentTenantIssueCache();
+        auditLogService.logCurrentUser("ISSUE_UPDATED", "ISSUE", updatedIssue.getId());
         return mapToResponse(updatedIssue);
     }
 
@@ -227,9 +244,17 @@ public class IssueServiceImpl implements IssueService {
         Issue issue = issueRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found with id: " + id));
 
-        issue.setArchived(true);
-        issueRepository.save(issue);
+        Long issueId = issue.getId();
+        maintenanceRequestRepository.deleteByIssue_Id(issueId);
+        issueAssignmentRepository.deleteByIssueId(issueId);
+        issueStatusHistoryRepository.deleteByIssueId(issueId);
+        commentRepository.deleteByIssueId(issueId);
+        attachmentRepository.deleteByIssueId(issueId);
+        workLogRepository.deleteByIssueId(issueId);
+        aiClassificationLogRepository.deleteByIssueId(issueId);
+        issueRepository.delete(issue);
         evictCurrentTenantIssueCache();
+        auditLogService.logCurrentUser("ISSUE_DELETED", "ISSUE", issueId);
     }
 
     @Override
@@ -361,7 +386,8 @@ public class IssueServiceImpl implements IssueService {
         Issue updatedIssue = issueRepository.save(issue);
         ensureMaintenanceWorkOrder(updatedIssue, resolveAssignmentRequester(technician));
         evictCurrentTenantIssueCache();
-        notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId);
+        scheduleAfterCommit(() -> notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technicianId));
+        auditLogService.logCurrentUser("TECHNICIAN_ASSIGNED", "ISSUE", updatedIssue.getId());
         return mapToResponse(updatedIssue);
     }
 
@@ -391,7 +417,8 @@ public class IssueServiceImpl implements IssueService {
         history.setChangedBy(changedBy);
         issueStatusHistoryRepository.save(history);
         evictCurrentTenantIssueCache();
-        notificationJob.notifyIssueStatusChanged(updatedIssue.getId(), newStatus);
+        scheduleAfterCommit(() -> notificationJob.notifyIssueStatusChanged(updatedIssue.getId(), newStatus));
+        auditLogService.logCurrentUser("ISSUE_STATUS_CHANGED", "ISSUE", updatedIssue.getId());
         return mapToResponse(updatedIssue);
     }
 
@@ -434,17 +461,21 @@ public class IssueServiceImpl implements IssueService {
     }
 
     private void scheduleAutoClassification(Long issueId, Long requestedByUserId) {
+        scheduleAfterCommit(() -> issueAutoClassificationJob.classifyAndAssign(issueId, requestedByUserId));
+    }
+
+    private void scheduleAfterCommit(Runnable task) {
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
                 @Override
                 public void afterCommit() {
-                    issueAutoClassificationJob.classifyAndAssign(issueId, requestedByUserId);
+                    task.run();
                 }
             });
             return;
         }
 
-        issueAutoClassificationJob.classifyAndAssign(issueId, requestedByUserId);
+        task.run();
     }
 
     private Issue autoAssignTechnician(Issue issue, User requestedBy) {
@@ -470,7 +501,7 @@ public class IssueServiceImpl implements IssueService {
         issue.setStatus(STATUS_ASSIGNED);
         Issue updatedIssue = issueRepository.save(issue);
         ensureMaintenanceWorkOrder(updatedIssue, requestedBy);
-        notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technician.getId());
+        scheduleAfterCommit(() -> notificationJob.notifyTechnicianAssigned(updatedIssue.getId(), technician.getId()));
         return updatedIssue;
     }
 

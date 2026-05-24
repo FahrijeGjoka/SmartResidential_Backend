@@ -12,6 +12,8 @@ public interface MaintenanceRequestRepository extends BaseRepository<Maintenance
 
     boolean existsByIssue_Id(Long issueId);
 
+    void deleteByIssue_Id(Long issueId);
+
     List<MaintenanceRequest> findByRequestedBy_Id(Long requestedById);
 
     List<MaintenanceRequest> findByRequestedAt(LocalDateTime requestedAt);

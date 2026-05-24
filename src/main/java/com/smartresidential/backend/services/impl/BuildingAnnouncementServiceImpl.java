@@ -10,6 +10,7 @@ import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.BuildingAnnouncementRepository;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.services.interfaces.BuildingAnnouncementService;
 import org.springframework.stereotype.Service;
 
@@ -22,13 +23,16 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
     private final BuildingAnnouncementRepository buildingAnnouncementRepository;
     private final BuildingRepository buildingRepository;
     private final UserRepository userRepository;
+    private final AuditLogService auditLogService;
 
     public BuildingAnnouncementServiceImpl(BuildingAnnouncementRepository buildingAnnouncementRepository,
                                            BuildingRepository buildingRepository,
-                                           UserRepository userRepository) {
+                                           UserRepository userRepository,
+                                           AuditLogService auditLogService) {
         this.buildingAnnouncementRepository = buildingAnnouncementRepository;
         this.buildingRepository = buildingRepository;
         this.userRepository = userRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -46,6 +50,7 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
         announcement.setCreatedBy(createdBy);
 
         BuildingAnnouncement savedAnnouncement = buildingAnnouncementRepository.save(announcement);
+        auditLogService.logCurrentUser("ANNOUNCEMENT_CREATED", "ANNOUNCEMENT", savedAnnouncement.getId());
         return mapToDTO(savedAnnouncement);
     }
 
@@ -90,6 +95,7 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
         announcement.setCreatedBy(createdBy);
 
         BuildingAnnouncement updatedAnnouncement = buildingAnnouncementRepository.save(announcement);
+        auditLogService.logCurrentUser("ANNOUNCEMENT_UPDATED", "ANNOUNCEMENT", updatedAnnouncement.getId());
         return mapToDTO(updatedAnnouncement);
     }
 
@@ -99,6 +105,7 @@ public class BuildingAnnouncementServiceImpl implements BuildingAnnouncementServ
                 .orElseThrow(() -> new ResourceNotFoundException("BuildingAnnouncement not found with id: " + id));
 
         buildingAnnouncementRepository.delete(announcement);
+        auditLogService.logCurrentUser("ANNOUNCEMENT_DELETED", "ANNOUNCEMENT", id);
     }
 
     private BuildingAnnouncementResponseDTO mapToDTO(BuildingAnnouncement announcement) {

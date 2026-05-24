@@ -24,7 +24,7 @@ public class AuditLogController {
 
     @GetMapping
     public List<AuditLogResponseDTO> getAll() {
-        return service.getByUser(null);
+        return service.getAll();
     }
 
     @GetMapping("/user/{userId}")

@@ -20,6 +20,7 @@ public class IssueResponseDTO {
     private LocalDateTime updatedAt;
     private Double aiCategoryConfidence;
     private String aiCategoryReason;
+    private String aiClassificationStatus;
 
     public IssueResponseDTO() {
     }
@@ -150,5 +151,13 @@ public class IssueResponseDTO {
 
     public void setAiCategoryReason(String aiCategoryReason) {
         this.aiCategoryReason = aiCategoryReason;
+    }
+
+    public String getAiClassificationStatus() {
+        return aiClassificationStatus;
+    }
+
+    public void setAiClassificationStatus(String aiClassificationStatus) {
+        this.aiClassificationStatus = aiClassificationStatus;
     }
 }

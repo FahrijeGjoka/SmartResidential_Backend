@@ -13,9 +13,12 @@ import com.smartresidential.backend.repositories.AttachmentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.AttachmentService;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.util.StringUtils;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -34,6 +37,7 @@ public class AttachmentServiceImpl implements AttachmentService {
     private final IssueRepository issueRepository;
     private final UserRepository userRepository;
     private final AttachmentProcessingService attachmentProcessingService;
+    private final AuditLogService auditLogService;
     private final Path storageRoot;
 
     public AttachmentServiceImpl(
@@ -41,12 +45,14 @@ public class AttachmentServiceImpl implements AttachmentService {
             IssueRepository issueRepository,
             UserRepository userRepository,
             AttachmentProcessingService attachmentProcessingService,
+            AuditLogService auditLogService,
             @Value("${app.attachments.storage-dir:uploads/attachments}") String storageDir
     ) {
         this.attachmentRepository = attachmentRepository;
         this.issueRepository = issueRepository;
         this.userRepository = userRepository;
         this.attachmentProcessingService = attachmentProcessingService;
+        this.auditLogService = auditLogService;
         this.storageRoot = Path.of(storageDir).toAbsolutePath().normalize();
     }
 
@@ -109,9 +115,24 @@ public class AttachmentServiceImpl implements AttachmentService {
         saved.setProcessingStatus(AttachmentProcessingStatus.PROCESSING);
         Attachment queued = attachmentRepository.save(saved);
 
-        attachmentProcessingService.processAttachmentAsync(queued.getId(), pendingPath.toString());
+        scheduleProcessingAfterCommit(queued.getId(), pendingPath.toString());
+        auditLogService.logCurrentUser("ATTACHMENT_UPLOADED", "ATTACHMENT", queued.getId());
 
         return convertToResponseDTO(queued);
+    }
+
+    private void scheduleProcessingAfterCommit(Long attachmentId, String pendingPath) {
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    attachmentProcessingService.processAttachmentAsync(attachmentId, pendingPath);
+                }
+            });
+            return;
+        }
+
+        attachmentProcessingService.processAttachmentAsync(attachmentId, pendingPath);
     }
 
     @Override
@@ -142,6 +163,7 @@ public class AttachmentServiceImpl implements AttachmentService {
         deleteIfExists(attachment.getFileUrl());
         deleteIfExists(attachment.getThumbnailPath());
         attachmentRepository.delete(attachment);
+        auditLogService.logCurrentUser("ATTACHMENT_DELETED", "ATTACHMENT", id);
     }
 
     private Attachment findAttachment(Long id) {

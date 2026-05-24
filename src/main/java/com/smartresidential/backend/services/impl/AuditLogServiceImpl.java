@@ -4,6 +4,7 @@ import com.smartresidential.backend.dto.auditLog.AuditLogResponseDTO;
 import com.smartresidential.backend.dto.auditLog.CreateAuditLogRequest;
 import com.smartresidential.backend.entities.AuditLog;
 import com.smartresidential.backend.entities.User;
+import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.AuditLogRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.AuditLogService;
@@ -38,6 +39,24 @@ public class AuditLogServiceImpl implements AuditLogService {
         log.setEntityId(request.getEntityId());
 
         repository.save(log);
+    }
+
+    @Override
+    public void logCurrentUser(String action, String entityType, Long entityId) {
+        CreateAuditLogRequest request = new CreateAuditLogRequest();
+        request.setUserId(TenantContext.getUserId());
+        request.setAction(action);
+        request.setEntityType(entityType);
+        request.setEntityId(entityId);
+        log(request);
+    }
+
+    @Override
+    public List<AuditLogResponseDTO> getAll() {
+        return repository.findAllByOrderByCreatedAtDescIdDesc()
+                .stream()
+                .map(this::mapToDTO)
+                .toList();
     }
 
     @Override

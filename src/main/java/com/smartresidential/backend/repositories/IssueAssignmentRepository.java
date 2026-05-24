@@ -9,6 +9,8 @@ public interface IssueAssignmentRepository extends BaseRepository<IssueAssignmen
 
     List<IssueAssignment> findByIssueId(Long issueId);
 
+    void deleteByIssueId(Long issueId);
+
     boolean existsByIssueId(Long issueId);
 
     Optional<IssueAssignment> findTopByIssueIdOrderByAssignedAtDescIdDesc(Long issueId);

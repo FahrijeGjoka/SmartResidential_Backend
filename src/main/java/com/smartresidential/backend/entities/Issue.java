@@ -47,6 +47,10 @@ public class Issue {
     @Column(name = "ai_category_reason", columnDefinition = "TEXT")
     private String aiCategoryReason;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "ai_classification_status", nullable = false)
+    private AIClassificationStatus aiClassificationStatus;
+
     @Column(name = "is_archived", nullable = false)
     private Boolean archived = false;
 
@@ -59,6 +63,11 @@ public class Issue {
         this.updatedAt = LocalDateTime.now();
         if (this.archived == null) {
             this.archived = false;
+        }
+        if (this.aiClassificationStatus == null) {
+            this.aiClassificationStatus = this.category == null
+                    ? AIClassificationStatus.NEEDS_REVIEW
+                    : AIClassificationStatus.COMPLETED;
         }
     }
 
@@ -115,6 +124,10 @@ public class Issue {
         return aiCategoryReason;
     }
 
+    public AIClassificationStatus getAiClassificationStatus() {
+        return aiClassificationStatus;
+    }
+
     public Boolean getArchived() {
         return archived;
     }
@@ -169,6 +182,10 @@ public class Issue {
 
     public void setAiCategoryReason(String aiCategoryReason) {
         this.aiCategoryReason = aiCategoryReason;
+    }
+
+    public void setAiClassificationStatus(AIClassificationStatus aiClassificationStatus) {
+        this.aiClassificationStatus = aiClassificationStatus;
     }
 
     public void setArchived(Boolean archived) {

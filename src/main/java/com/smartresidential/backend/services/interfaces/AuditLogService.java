@@ -9,6 +9,10 @@ public interface AuditLogService {
 
     void log(CreateAuditLogRequest request);
 
+    void logCurrentUser(String action, String entityType, Long entityId);
+
+    List<AuditLogResponseDTO> getAll();
+
     List<AuditLogResponseDTO> getByUser(Long userId);
 
     List<AuditLogResponseDTO> getByEntity(Long entityId);

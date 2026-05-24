@@ -13,6 +13,7 @@ import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.services.interfaces.ResidentProfileService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
@@ -32,15 +33,18 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
     private final RoleRepository roleRepository;
+    private final AuditLogService auditLogService;
 
     public ResidentProfileServiceImpl(ResidentProfileRepository residentProfileRepository,
                                       UserRepository userRepository,
                                       ApartmentRepository apartmentRepository,
-                                      RoleRepository roleRepository) {
+                                      RoleRepository roleRepository,
+                                      AuditLogService auditLogService) {
         this.residentProfileRepository = residentProfileRepository;
         this.userRepository = userRepository;
         this.apartmentRepository = apartmentRepository;
         this.roleRepository = roleRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -59,6 +63,7 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
         residentProfile.setMovedInAt(request.getMovedInAt());
 
         ResidentProfile savedResidentProfile = saveResidentProfile(residentProfile);
+        auditLogService.logCurrentUser("RESIDENT_LINKED", "RESIDENT_PROFILE", savedResidentProfile.getId());
         return mapToDTO(savedResidentProfile);
     }
 

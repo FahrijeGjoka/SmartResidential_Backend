@@ -3,8 +3,10 @@ package com.smartresidential.backend.jobs;
 import com.smartresidential.backend.ai.IssueCategoryMatch;
 import com.smartresidential.backend.cache.CacheNames;
 import com.smartresidential.backend.cache.TenantCacheEvictor;
+import com.smartresidential.backend.entities.AIClassificationStatus;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.IssueAssignment;
+import com.smartresidential.backend.entities.IssueCategory;
 import com.smartresidential.backend.entities.MaintenanceRequest;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.TechnicianProfile;
@@ -12,11 +14,13 @@ import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
+import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.IssueCategoryMatcherService;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
@@ -39,19 +43,22 @@ public class IssueAutoClassificationJob {
     private static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
     private static final String ROLE_TECHNICIAN = "ROLE_TECHNICIAN";
     private static final String GENERAL_MAINTENANCE_SPECIALIZATION = "General maintenance";
+    private static final String GENERAL_MAINTENANCE_CATEGORY = "General maintenance";
     private static final int DEFAULT_MAX_ACTIVE_ISSUES = 5;
     private static final Set<String> ACTIVE_WORKLOAD_STATUSES = Set.of(STATUS_ASSIGNED, STATUS_IN_PROGRESS);
     private static final Set<String> HIGH_PRIORITY_VALUES = Set.of("URGENT", "HIGH");
 
     private final IssueRepository issueRepository;
     private final IssueAssignmentRepository issueAssignmentRepository;
-    private final MaintenanceRequestRepository maintenanceRequestRepository;
+        private final IssueCategoryRepository issueCategoryRepository;
+private final MaintenanceRequestRepository maintenanceRequestRepository;
     private final TechnicianProfileRepository technicianProfileRepository;
     private final RoleRepository roleRepository;
     private final UserRepository userRepository;
     private final IssueCategoryMatcherService issueCategoryMatcherService;
     private final NotificationJob notificationJob;
     private final TenantCacheEvictor tenantCacheEvictor;
+    private final AuditLogService auditLogService;
 
     @Async
     @Transactional
@@ -64,27 +71,56 @@ public class IssueAutoClassificationJob {
                 return;
             }
 
+            issue.setAiClassificationStatus(AIClassificationStatus.PROCESSING);
+            issueRepository.save(issue);
+
             IssueCategoryMatch categoryMatch = issueCategoryMatcherService
                     .matchCategory(issue.getTitle(), issue.getDescription())
                     .orElse(null);
 
             if (categoryMatch == null) {
-                log.info("Background job completed: no auto category matched for issue {}", issueId);
+                IssueCategory fallbackCategory = issueCategoryRepository.findByName(GENERAL_MAINTENANCE_CATEGORY)
+                        .orElseThrow(() -> new ResourceNotFoundException(
+                                "Fallback issue category not found: " + GENERAL_MAINTENANCE_CATEGORY));
+
+                issue.setCategory(fallbackCategory);
+                issue.setAiClassificationStatus(AIClassificationStatus.COMPLETED);
+                issue.setAiCategoryConfidence(null);
+                issue.setAiCategoryReason("No confident AI category matched; assigned fallback category: " + GENERAL_MAINTENANCE_CATEGORY + ".");
+
+                Issue savedIssue = issueRepository.save(issue);
+                Issue assignedIssue = autoAssignTechnician(savedIssue, resolveRequester(requestedByUserId));
+                tenantCacheEvictor.evictCurrentTenant(CacheNames.ISSUES);
+                auditLogService.logCurrentUser("AI_CLASSIFICATION_FALLBACK", "ISSUE", assignedIssue.getId());
+                log.info("Background job completed: issue {} assigned fallback category {}",
+                        assignedIssue.getId(),
+                        GENERAL_MAINTENANCE_CATEGORY);
                 return;
             }
 
             issue.setCategory(categoryMatch.getCategory());
             issue.setAiCategoryConfidence(categoryMatch.getConfidence());
             issue.setAiCategoryReason(categoryMatch.getReason());
+            issue.setAiClassificationStatus(AIClassificationStatus.COMPLETED);
 
             Issue savedIssue = issueRepository.save(issue);
             Issue assignedIssue = autoAssignTechnician(savedIssue, resolveRequester(requestedByUserId));
             tenantCacheEvictor.evictCurrentTenant(CacheNames.ISSUES);
+            auditLogService.logCurrentUser("AI_CLASSIFICATION_COMPLETED", "ISSUE", assignedIssue.getId());
 
             log.info("Background job completed: issue {} auto-classified as {}",
                     assignedIssue.getId(),
                     categoryMatch.getCategory().getName());
         } catch (RuntimeException exception) {
+            issueRepository.findById(issueId).ifPresent(issue -> {
+                if (!Boolean.TRUE.equals(issue.getArchived()) && issue.getCategory() == null) {
+                    issue.setAiClassificationStatus(AIClassificationStatus.FAILED);
+                    issue.setAiCategoryReason(exception.getMessage());
+                    issueRepository.save(issue);
+                    tenantCacheEvictor.evictCurrentTenant(CacheNames.ISSUES);
+                    auditLogService.logCurrentUser("AI_CLASSIFICATION_FAILED", "ISSUE", issueId);
+                }
+            });
             log.warn("Background job failed: issue auto-classification for issue {}: {}",
                     issueId,
                     exception.getMessage(),

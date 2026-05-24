@@ -12,6 +12,7 @@ import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,9 @@ class ResidentProfileServiceImplTest {
     @Mock
     private RoleRepository roleRepository;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     private ResidentProfileServiceImpl service;
 
     @BeforeEach
@@ -53,7 +57,8 @@ class ResidentProfileServiceImplTest {
                 residentProfileRepository,
                 userRepository,
                 apartmentRepository,
-                roleRepository
+                roleRepository,
+                auditLogService
         );
     }
 
