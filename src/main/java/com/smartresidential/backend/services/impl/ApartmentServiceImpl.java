@@ -1,20 +1,24 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.cache.CacheNames;
+import com.smartresidential.backend.dto.apartment.ApartmentFilterRequest;
 import com.smartresidential.backend.dto.apartment.ApartmentResponseDTO;
 import com.smartresidential.backend.dto.apartment.CreateApartmentRequest;
 import com.smartresidential.backend.dto.apartment.UpdateApartmentRequest;
+import com.smartresidential.backend.dto.common.PageRequestFactory;
 import com.smartresidential.backend.entities.Apartment;
 import com.smartresidential.backend.entities.Building;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.services.interfaces.ApartmentService;
+import com.smartresidential.backend.specifications.ApartmentSpecification;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -81,6 +85,14 @@ public class ApartmentServiceImpl implements ApartmentService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<ApartmentResponseDTO> searchApartments(ApartmentFilterRequest filter) {
+        return apartmentRepository.findAll(
+                ApartmentSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "createdAt")
+        ).map(this::mapToDTO);
     }
 
     @Override

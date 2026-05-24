@@ -19,18 +19,12 @@ public class AttachmentSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ISSUE FILTER
-            // =========================
             if (filter.getIssueId() != null) {
                 predicates.add(
                         cb.equal(root.get("issue").get("id"), filter.getIssueId())
                 );
             }
 
-            // =========================
-            // 🔥 FILE NAME SEARCH
-            // =========================
             if (filter.getFileName() != null && !filter.getFileName().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -40,9 +34,6 @@ public class AttachmentSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 UPLOADED AT RANGE
-            // =========================
             if (filter.getUploadedAfter() != null && filter.getUploadedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("uploadedAt"),

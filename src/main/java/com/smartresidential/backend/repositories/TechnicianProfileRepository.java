@@ -1,14 +1,13 @@
 package com.smartresidential.backend.repositories;
 
 import com.smartresidential.backend.entities.TechnicianProfile;
-import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface TechnicianProfileRepository extends JpaRepository<TechnicianProfile, Long> {
+public interface TechnicianProfileRepository extends BaseRepository<TechnicianProfile, Long> {
 
     Optional<TechnicianProfile> findByUserId(Long userId);
 

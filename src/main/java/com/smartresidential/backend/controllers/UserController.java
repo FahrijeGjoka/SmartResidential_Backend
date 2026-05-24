@@ -1,12 +1,15 @@
 package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.dto.user.CreateUserRequest;
+import com.smartresidential.backend.dto.user.UserFilterRequest;
 import com.smartresidential.backend.dto.user.UserResponseDTO;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.services.interfaces.RoleService;
 import com.smartresidential.backend.services.interfaces.UserService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -35,6 +38,14 @@ public class UserController {
     @GetMapping("/page")
     public Page<UserResponseDTO> getUsersPage(Pageable pageable) {
         return userService.getAllUsers(pageable).map(this::mapToResponse);
+    }
+
+    @Operation(summary = "Search and filter users")
+    @GetMapping("/search")
+    public Page<UserResponseDTO> searchUsers(
+            @ParameterObject @ModelAttribute UserFilterRequest filter
+    ) {
+        return userService.searchUsers(filter).map(this::mapToResponse);
     }
 
     @GetMapping("/active")

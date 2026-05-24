@@ -6,7 +6,6 @@ public class CreateAttachmentRequest {
     private String fileType;
     private byte[] fileData;
 
-    // Getter dhe Setter
     public Long getRelatedEntityId() {
         return relatedEntityId;
     }

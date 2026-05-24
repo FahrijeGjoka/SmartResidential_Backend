@@ -1,6 +1,8 @@
 package com.smartresidential.backend.dto.notification;
 
 import com.smartresidential.backend.dto.common.BaseFilterRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 public class NotificationFilterRequest extends BaseFilterRequest {
@@ -13,8 +15,10 @@ public class NotificationFilterRequest extends BaseFilterRequest {
 
     private String message;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdBefore;
 
     public Long getUserId() {

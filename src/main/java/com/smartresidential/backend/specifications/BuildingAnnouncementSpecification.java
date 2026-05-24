@@ -19,27 +19,18 @@ public class BuildingAnnouncementSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 BUILDING FILTER
-            // =========================
             if (filter.getBuildingId() != null) {
                 predicates.add(
                         cb.equal(root.get("building").get("id"), filter.getBuildingId())
                 );
             }
 
-            // =========================
-            // 🔥 CREATED BY USER FILTER
-            // =========================
             if (filter.getCreatedByUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("createdBy").get("id"), filter.getCreatedByUserId())
                 );
             }
 
-            // =========================
-            // 🔥 TITLE SEARCH
-            // =========================
             if (filter.getTitle() != null && !filter.getTitle().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -49,9 +40,6 @@ public class BuildingAnnouncementSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 MESSAGE SEARCH
-            // =========================
             if (filter.getMessage() != null && !filter.getMessage().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -61,9 +49,6 @@ public class BuildingAnnouncementSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

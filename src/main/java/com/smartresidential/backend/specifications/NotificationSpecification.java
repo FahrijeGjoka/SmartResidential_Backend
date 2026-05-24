@@ -19,36 +19,24 @@ public class NotificationSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 USER FILTER
-            // =========================
             if (filter.getUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("user").get("id"), filter.getUserId())
                 );
             }
 
-            // =========================
-            // 🔥 TYPE FILTER
-            // =========================
             if (filter.getType() != null && !filter.getType().isEmpty()) {
                 predicates.add(
                         cb.equal(root.get("type"), filter.getType())
                 );
             }
 
-            // =========================
-            // 🔥 READ / UNREAD FILTER
-            // =========================
             if (filter.getIsRead() != null) {
                 predicates.add(
                         cb.equal(root.get("isRead"), filter.getIsRead())
                 );
             }
 
-            // =========================
-            // 🔥 MESSAGE SEARCH
-            // =========================
             if (filter.getMessage() != null && !filter.getMessage().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -58,9 +46,6 @@ public class NotificationSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

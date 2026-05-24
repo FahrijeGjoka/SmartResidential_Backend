@@ -19,9 +19,6 @@ public class IssueCategorySpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 NAME SEARCH
-            // =========================
             if (filter.getName() != null && !filter.getName().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -31,9 +28,6 @@ public class IssueCategorySpecification {
                 );
             }
 
-            // =========================
-            // 🔥 DESCRIPTION SEARCH
-            // =========================
             if (filter.getDescription() != null && !filter.getDescription().isEmpty()) {
                 predicates.add(
                         cb.like(

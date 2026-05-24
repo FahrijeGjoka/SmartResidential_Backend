@@ -19,18 +19,12 @@ public class TechnicianProfileSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 USER FILTER
-            // =========================
             if (filter.getUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("user").get("id"), filter.getUserId())
                 );
             }
 
-            // =========================
-            // 🔥 SPECIALIZATION SEARCH
-            // =========================
             if (filter.getSpecialization() != null && !filter.getSpecialization().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -40,9 +34,6 @@ public class TechnicianProfileSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 AVAILABILITY FILTER
-            // =========================
             if (filter.getIsAvailable() != null) {
                 predicates.add(
                         cb.equal(root.get("isAvailable"), filter.getIsAvailable())

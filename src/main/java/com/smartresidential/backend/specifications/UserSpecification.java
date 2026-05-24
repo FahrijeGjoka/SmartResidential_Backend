@@ -19,18 +19,12 @@ public class UserSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ROLE FILTER
-            // =========================
             if (filter.getRoleId() != null) {
                 predicates.add(
                         cb.equal(root.get("roleId"), filter.getRoleId())
                 );
             }
 
-            // =========================
-            // 🔥 EMAIL SEARCH
-            // =========================
             if (filter.getEmail() != null && !filter.getEmail().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -40,9 +34,6 @@ public class UserSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 FIRST NAME SEARCH
-            // =========================
             if (filter.getFirstName() != null && !filter.getFirstName().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -52,9 +43,6 @@ public class UserSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 LAST NAME SEARCH
-            // =========================
             if (filter.getLastName() != null && !filter.getLastName().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -64,18 +52,12 @@ public class UserSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 ACTIVE STATUS
-            // =========================
             if (filter.getIsActive() != null) {
                 predicates.add(
                         cb.equal(root.get("isActive"), filter.getIsActive())
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

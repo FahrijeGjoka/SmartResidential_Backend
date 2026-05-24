@@ -30,7 +30,6 @@ public class CommentServiceImpl implements CommentService {
         this.userRepository = userRepository;
     }
 
-    // 🔹 CREATE COMMENT
     @Override
     public CommentResponseDTO createComment(CommentRequestDTO dto) {
 
@@ -50,7 +49,6 @@ public class CommentServiceImpl implements CommentService {
         return mapToResponse(saved);
     }
 
-    // 🔹 GET COMMENTS BY ISSUE
     @Override
     public List<CommentResponseDTO> getCommentsByIssue(Long issueId) {
         return commentRepository.findByIssueId(issueId)
@@ -59,7 +57,6 @@ public class CommentServiceImpl implements CommentService {
                 .collect(Collectors.toList());
     }
 
-    // 🔹 DELETE COMMENT
     @Override
     public void deleteComment(Long id) {
         if (!commentRepository.existsById(id)) {
@@ -68,7 +65,6 @@ public class CommentServiceImpl implements CommentService {
         commentRepository.deleteById(id);
     }
 
-    // 🔹 MAPPER (shumë e rëndësishme për intervista 🔥)
     private CommentResponseDTO mapToResponse(Comment comment) {
         CommentResponseDTO dto = new CommentResponseDTO();
         dto.setId(comment.getId());

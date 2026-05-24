@@ -1,8 +1,12 @@
 package com.smartresidential.backend.controllers;
 
+import com.smartresidential.backend.dto.auditLog.AuditLogFilterRequest;
 import com.smartresidential.backend.dto.auditLog.AuditLogResponseDTO;
 import com.smartresidential.backend.dto.auditLog.CreateAuditLogRequest;
 import com.smartresidential.backend.services.interfaces.AuditLogService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +29,14 @@ public class AuditLogController {
     @GetMapping
     public List<AuditLogResponseDTO> getAll() {
         return service.getAll();
+    }
+
+    @Operation(summary = "Search and filter audit logs")
+    @GetMapping("/search")
+    public Page<AuditLogResponseDTO> search(
+            @ParameterObject @ModelAttribute AuditLogFilterRequest filter
+    ) {
+        return service.search(filter);
     }
 
     @GetMapping("/user/{userId}")

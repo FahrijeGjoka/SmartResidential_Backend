@@ -19,9 +19,6 @@ public class BuildingSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 NAME SEARCH
-            // =========================
             if (filter.getName() != null && !filter.getName().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -31,9 +28,6 @@ public class BuildingSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 ADDRESS SEARCH
-            // =========================
             if (filter.getAddress() != null && !filter.getAddress().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -43,9 +37,6 @@ public class BuildingSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

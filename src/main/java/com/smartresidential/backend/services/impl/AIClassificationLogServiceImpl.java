@@ -41,10 +41,8 @@ public class AIClassificationLogServiceImpl implements AIClassificationLogServic
         Issue issue = issueRepository.findById(request.getIssueId())
                 .orElseThrow(() -> new ResourceNotFoundException("Issue not found"));
 
-        // Thirr Ollama-n për klasifikim
         OllamaService.AIClassificationResult aiResult = ollamaService.classifyIssue(request.getRawInput());
 
-        // Ruaj klasifikimin
         AIClassificationLog log = new AIClassificationLog();
         log.setIssue(issue);
         log.setRawInput(request.getRawInput());
@@ -53,7 +51,6 @@ public class AIClassificationLogServiceImpl implements AIClassificationLogServic
         log.setConfidenceScore(aiResult.getConfidenceScore());
         AIClassificationLog savedLog = repository.save(log);
 
-        // Gjej teknikun më të mirë
         TechnicianProfile bestTechnician = findBestTechnician(aiResult.getPredictedCategory());
 
         String technicianInfo = "Nuk u gjet teknik";
@@ -62,8 +59,6 @@ public class AIClassificationLogServiceImpl implements AIClassificationLogServic
                     bestTechnician.getUser().getLastName() +
                     " (" + bestTechnician.getSpecialization() + ")";
         }
-
-        // Dërgo njoftim
         if (bestTechnician != null) {
             Notification notification = new Notification();
             notification.setUser(bestTechnician.getUser());
@@ -74,7 +69,6 @@ public class AIClassificationLogServiceImpl implements AIClassificationLogServic
             notificationRepository.save(notification);
         }
 
-        // Regjistro audit log
         AuditLog auditLog = new AuditLog();
         auditLog.setUser(issue.getCreatedBy());
         auditLog.setAction("AI_CLASSIFICATION");
@@ -97,7 +91,6 @@ public class AIClassificationLogServiceImpl implements AIClassificationLogServic
         return !available.isEmpty() ? available.get(0) : null;
     }
 
-    // Metodat e tjera mbeten të njëjta...
     @Override
     public List<AIClassificationLogResponseDTO> getByIssue(Long issueId) {
         return repository.findByIssueId(issueId).stream().map(this::mapToDTO).toList();

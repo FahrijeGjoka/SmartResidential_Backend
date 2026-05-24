@@ -19,27 +19,18 @@ public class IssueAssignmentSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ISSUE FILTER
-            // =========================
             if (filter.getIssueId() != null) {
                 predicates.add(
                         cb.equal(root.get("issue").get("id"), filter.getIssueId())
                 );
             }
 
-            // =========================
-            // 🔥 TECHNICIAN FILTER
-            // =========================
             if (filter.getTechnicianId() != null) {
                 predicates.add(
                         cb.equal(root.get("technician").get("id"), filter.getTechnicianId())
                 );
             }
 
-            // =========================
-            // 🔥 ASSIGNED AT RANGE
-            // =========================
             if (filter.getAssignedAfter() != null && filter.getAssignedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("assignedAt"),

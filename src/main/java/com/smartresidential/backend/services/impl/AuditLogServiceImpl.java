@@ -1,13 +1,17 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.dto.auditLog.AuditLogFilterRequest;
 import com.smartresidential.backend.dto.auditLog.AuditLogResponseDTO;
 import com.smartresidential.backend.dto.auditLog.CreateAuditLogRequest;
+import com.smartresidential.backend.dto.common.PageRequestFactory;
 import com.smartresidential.backend.entities.AuditLog;
 import com.smartresidential.backend.entities.User;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.AuditLogRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.AuditLogService;
+import com.smartresidential.backend.specifications.AuditLogSpecification;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -57,6 +61,14 @@ public class AuditLogServiceImpl implements AuditLogService {
                 .stream()
                 .map(this::mapToDTO)
                 .toList();
+    }
+
+    @Override
+    public Page<AuditLogResponseDTO> search(AuditLogFilterRequest filter) {
+        return repository.findAll(
+                AuditLogSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "createdAt")
+        ).map(this::mapToDTO);
     }
 
     @Override

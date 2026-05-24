@@ -1,6 +1,8 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.dto.common.PageRequestFactory;
 import com.smartresidential.backend.dto.technicianProfile.CreateTechnicianProfileRequest;
+import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileFilterRequest;
 import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileResponseDTO;
 import com.smartresidential.backend.dto.technicianProfile.UpdateTechnicianProfileRequest;
 import com.smartresidential.backend.entities.Issue;
@@ -12,6 +14,8 @@ import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.TechnicianProfileService;
+import com.smartresidential.backend.specifications.TechnicianProfileSpecification;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDateTime;
@@ -69,6 +73,14 @@ public class TechnicianProfileServiceImpl implements TechnicianProfileService {
     public List<TechnicianProfileResponseDTO> getAll() {
         return repository.findAll()
                 .stream().map(this::mapToDTO).toList();
+    }
+
+    @Override
+    public Page<TechnicianProfileResponseDTO> search(TechnicianProfileFilterRequest filter) {
+        return repository.findAll(
+                TechnicianProfileSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "id")
+        ).map(this::mapToDTO);
     }
 
     @Override

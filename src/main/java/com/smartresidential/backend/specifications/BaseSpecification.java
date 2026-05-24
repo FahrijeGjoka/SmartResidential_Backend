@@ -26,9 +26,6 @@ public class BaseSpecification<T> {
                 .orElse(null);
     }
 
-    // =========================
-    // 🔥 REUSABLE HELPERS
-    // =========================
 
     public static <T> Specification<T> equalsSpec(String field, Object value) {
         return (root, query, cb) -> {
@@ -68,9 +65,6 @@ public class BaseSpecification<T> {
         };
     }
 
-    // =========================
-    // 🔥 DATE RANGE HELPER
-    // =========================
 
     public static <T> Specification<T> betweenDates(
             String field,
@@ -92,9 +86,6 @@ public class BaseSpecification<T> {
         };
     }
 
-    // =========================
-    // 🔥 JOIN HELPER
-    // =========================
 
     public static <T> Specification<T> joinEquals(
             String joinField,
@@ -111,9 +102,6 @@ public class BaseSpecification<T> {
         };
     }
 
-    // =========================
-    // 🔥 SEARCH MULTI FIELD
-    // =========================
 
     public static <T> Specification<T> multiLike(List<String> fields, String value) {
         return (root, query, cb) -> {

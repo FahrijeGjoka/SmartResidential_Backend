@@ -1,6 +1,7 @@
 package com.smartresidential.backend.services.interfaces;
 
 import com.smartresidential.backend.dto.user.CreateUserRequest;
+import com.smartresidential.backend.dto.user.UserFilterRequest;
 import com.smartresidential.backend.entities.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -13,6 +14,8 @@ public interface UserService {
     List<User> getAllUsers();
 
     Page<User> getAllUsers(Pageable pageable);
+
+    Page<User> searchUsers(UserFilterRequest filter);
 
     List<User> getAllActiveUsers();
 

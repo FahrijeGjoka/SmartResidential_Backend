@@ -19,45 +19,30 @@ public class AuditLogSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 USER FILTER
-            // =========================
             if (filter.getUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("user").get("id"), filter.getUserId())
                 );
             }
 
-            // =========================
-            // 🔥 ACTION FILTER
-            // =========================
             if (filter.getAction() != null && !filter.getAction().isEmpty()) {
                 predicates.add(
                         cb.equal(root.get("action"), filter.getAction())
                 );
             }
 
-            // =========================
-            // 🔥 ENTITY TYPE FILTER
-            // =========================
             if (filter.getEntityType() != null && !filter.getEntityType().isEmpty()) {
                 predicates.add(
                         cb.equal(root.get("entityType"), filter.getEntityType())
                 );
             }
 
-            // =========================
-            // 🔥 ENTITY ID FILTER
-            // =========================
             if (filter.getEntityId() != null) {
                 predicates.add(
                         cb.equal(root.get("entityId"), filter.getEntityId())
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

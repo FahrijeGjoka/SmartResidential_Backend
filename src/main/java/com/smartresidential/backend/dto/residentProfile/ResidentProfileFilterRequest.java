@@ -1,6 +1,8 @@
 package com.smartresidential.backend.dto.residentprofile;
 
 import com.smartresidential.backend.dto.common.BaseFilterRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 public class ResidentProfileFilterRequest extends BaseFilterRequest {
@@ -9,8 +11,10 @@ public class ResidentProfileFilterRequest extends BaseFilterRequest {
 
     private Long apartmentId;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime movedInAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime movedInBefore;
 
     public Long getUserId() {
