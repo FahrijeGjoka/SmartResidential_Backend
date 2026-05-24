@@ -1,6 +1,8 @@
 package com.smartresidential.backend.dto.user;
 
 import com.smartresidential.backend.dto.common.BaseFilterRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 public class UserFilterRequest extends BaseFilterRequest {
@@ -15,8 +17,10 @@ public class UserFilterRequest extends BaseFilterRequest {
 
     private Boolean isActive;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdBefore;
 
     public Long getRoleId() {

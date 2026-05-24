@@ -14,6 +14,7 @@ import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.services.interfaces.MaintenanceRequestService;
 import org.springframework.stereotype.Service;
 
@@ -26,17 +27,20 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
     private final UserRepository userRepository;
     private final IssueRepository issueRepository;
     private final IssueAssignmentRepository issueAssignmentRepository;
+    private final AuditLogService auditLogService;
 
     public MaintenanceRequestServiceImpl(
             MaintenanceRequestRepository maintenanceRequestRepository,
             UserRepository userRepository,
             IssueRepository issueRepository,
-            IssueAssignmentRepository issueAssignmentRepository
+            IssueAssignmentRepository issueAssignmentRepository,
+            AuditLogService auditLogService
     ) {
         this.maintenanceRequestRepository = maintenanceRequestRepository;
         this.userRepository = userRepository;
         this.issueRepository = issueRepository;
         this.issueAssignmentRepository = issueAssignmentRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -57,6 +61,7 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
         maintenanceRequest.setDescription(request.getDescription());
 
         MaintenanceRequest savedRequest = maintenanceRequestRepository.save(maintenanceRequest);
+        auditLogService.logCurrentUser("MAINTENANCE_REQUEST_CREATED", "MAINTENANCE_REQUEST", savedRequest.getId());
 
         return convertToResponseDTO(savedRequest);
     }
@@ -80,6 +85,7 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
 
         return maintenanceRequestRepository.findAll()
                 .stream()
+                .filter(this::hasVisibleIssue)
                 .filter(request -> !"ROLE_TECHNICIAN".equals(roleName)
                         || isAssignedToTechnician(request, userId))
                 .map(this::convertToResponseDTO)
@@ -129,6 +135,11 @@ public class MaintenanceRequestServiceImpl implements MaintenanceRequestService 
                 .map(User::getId)
                 .filter(userId::equals)
                 .isPresent();
+    }
+
+    private boolean hasVisibleIssue(MaintenanceRequest request) {
+        Issue issue = request.getIssue();
+        return issue != null && !Boolean.TRUE.equals(issue.getArchived());
     }
 
     private String formatTechnicianName(User technician) {

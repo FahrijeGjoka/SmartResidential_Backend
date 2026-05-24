@@ -1,6 +1,8 @@
 package com.smartresidential.backend.dto.building;
 
 import com.smartresidential.backend.dto.common.BaseFilterRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 public class BuildingFilterRequest extends BaseFilterRequest {
@@ -9,8 +11,10 @@ public class BuildingFilterRequest extends BaseFilterRequest {
 
     private String address;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdBefore;
 
     public String getName() {

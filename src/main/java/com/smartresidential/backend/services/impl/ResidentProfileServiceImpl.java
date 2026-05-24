@@ -1,8 +1,10 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.dto.common.PageRequestFactory;
 import com.smartresidential.backend.dto.residentProfile.CreateResidentProfileRequest;
 import com.smartresidential.backend.dto.residentProfile.ResidentProfileResponseDTO;
 import com.smartresidential.backend.dto.residentProfile.UpdateResidentProfileRequest;
+import com.smartresidential.backend.dto.residentprofile.ResidentProfileFilterRequest;
 import com.smartresidential.backend.entities.Apartment;
 import com.smartresidential.backend.entities.ResidentProfile;
 import com.smartresidential.backend.entities.Role;
@@ -13,8 +15,11 @@ import com.smartresidential.backend.repositories.ApartmentRepository;
 import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.services.interfaces.ResidentProfileService;
+import com.smartresidential.backend.specifications.ResidentProfileSpecification;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,15 +37,18 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
     private final UserRepository userRepository;
     private final ApartmentRepository apartmentRepository;
     private final RoleRepository roleRepository;
+    private final AuditLogService auditLogService;
 
     public ResidentProfileServiceImpl(ResidentProfileRepository residentProfileRepository,
                                       UserRepository userRepository,
                                       ApartmentRepository apartmentRepository,
-                                      RoleRepository roleRepository) {
+                                      RoleRepository roleRepository,
+                                      AuditLogService auditLogService) {
         this.residentProfileRepository = residentProfileRepository;
         this.userRepository = userRepository;
         this.apartmentRepository = apartmentRepository;
         this.roleRepository = roleRepository;
+        this.auditLogService = auditLogService;
     }
 
     @Override
@@ -59,6 +67,7 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
         residentProfile.setMovedInAt(request.getMovedInAt());
 
         ResidentProfile savedResidentProfile = saveResidentProfile(residentProfile);
+        auditLogService.logCurrentUser("RESIDENT_LINKED", "RESIDENT_PROFILE", savedResidentProfile.getId());
         return mapToDTO(savedResidentProfile);
     }
 
@@ -78,6 +87,15 @@ public class ResidentProfileServiceImpl implements ResidentProfileService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Page<ResidentProfileResponseDTO> searchResidentProfiles(ResidentProfileFilterRequest filter) {
+        return residentProfileRepository.findAll(
+                ResidentProfileSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "id")
+        ).map(this::mapToDTO);
     }
 
     @Override

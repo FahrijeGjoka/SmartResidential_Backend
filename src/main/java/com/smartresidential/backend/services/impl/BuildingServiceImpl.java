@@ -1,16 +1,20 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.cache.CacheNames;
+import com.smartresidential.backend.dto.building.BuildingFilterRequest;
 import com.smartresidential.backend.dto.building.BuildingResponseDTO;
 import com.smartresidential.backend.dto.building.CreateBuildingRequest;
 import com.smartresidential.backend.dto.building.UpdateBuildingRequest;
+import com.smartresidential.backend.dto.common.PageRequestFactory;
 import com.smartresidential.backend.entities.Building;
 import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.BuildingRepository;
 import com.smartresidential.backend.services.interfaces.BuildingService;
+import com.smartresidential.backend.specifications.BuildingSpecification;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.cache.annotation.Caching;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -61,6 +65,14 @@ public class BuildingServiceImpl implements BuildingService {
                 .stream()
                 .map(this::mapToDTO)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public Page<BuildingResponseDTO> searchBuildings(BuildingFilterRequest filter) {
+        return buildingRepository.findAll(
+                BuildingSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "createdAt")
+        ).map(this::mapToDTO);
     }
 
     @Override

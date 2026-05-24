@@ -1,9 +1,13 @@
 package com.smartresidential.backend.controllers;
 
+import com.smartresidential.backend.dto.apartment.ApartmentFilterRequest;
 import com.smartresidential.backend.dto.apartment.ApartmentResponseDTO;
 import com.smartresidential.backend.dto.apartment.CreateApartmentRequest;
 import com.smartresidential.backend.dto.apartment.UpdateApartmentRequest;
 import com.smartresidential.backend.services.interfaces.ApartmentService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -42,7 +46,14 @@ public class ApartmentController {
         return ResponseEntity.ok(response);
     }
 
-    // ekstra endpoint sipas service-it
+    @Operation(summary = "Search and filter apartments")
+    @GetMapping("/search")
+    public ResponseEntity<Page<ApartmentResponseDTO>> searchApartments(
+            @ParameterObject @ModelAttribute ApartmentFilterRequest filter
+    ) {
+        return ResponseEntity.ok(apartmentService.searchApartments(filter));
+    }
+
     @GetMapping("/building/{buildingId}")
     public ResponseEntity<List<ApartmentResponseDTO>> getApartmentsByBuildingId(
             @PathVariable Long buildingId

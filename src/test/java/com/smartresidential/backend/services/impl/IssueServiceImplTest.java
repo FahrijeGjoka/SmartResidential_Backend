@@ -22,6 +22,9 @@ import com.smartresidential.backend.jobs.NotificationJob;
 import com.smartresidential.backend.mapper.IssueMapper;
 import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.ApartmentRepository;
+import com.smartresidential.backend.repositories.AIClassificationLogRepository;
+import com.smartresidential.backend.repositories.AttachmentRepository;
+import com.smartresidential.backend.repositories.CommentRepository;
 import com.smartresidential.backend.repositories.IssueAssignmentRepository;
 import com.smartresidential.backend.repositories.IssueCategoryRepository;
 import com.smartresidential.backend.repositories.IssueRepository;
@@ -31,12 +34,15 @@ import com.smartresidential.backend.repositories.ResidentProfileRepository;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.TechnicianProfileRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.repositories.WorkLogRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.services.interfaces.IssueCategoryMatcherService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
@@ -51,6 +57,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -80,6 +87,18 @@ class IssueServiceImplTest {
     private MaintenanceRequestRepository maintenanceRequestRepository;
 
     @Mock
+    private CommentRepository commentRepository;
+
+    @Mock
+    private AttachmentRepository attachmentRepository;
+
+    @Mock
+    private WorkLogRepository workLogRepository;
+
+    @Mock
+    private AIClassificationLogRepository aiClassificationLogRepository;
+
+    @Mock
     private ResidentProfileRepository residentProfileRepository;
 
     @Mock
@@ -100,6 +119,9 @@ class IssueServiceImplTest {
     @Mock
     private TenantCacheEvictor tenantCacheEvictor;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     private IssueServiceImpl service;
 
     @BeforeEach
@@ -112,6 +134,10 @@ class IssueServiceImplTest {
                 issueAssignmentRepository,
                 issueStatusHistoryRepository,
                 maintenanceRequestRepository,
+                commentRepository,
+                attachmentRepository,
+                workLogRepository,
+                aiClassificationLogRepository,
                 residentProfileRepository,
                 technicianProfileRepository,
                 roleRepository,
@@ -119,7 +145,8 @@ class IssueServiceImplTest {
                 issueAutoClassificationJob,
                 notificationJob,
                 new IssueMapper(),
-                tenantCacheEvictor
+                tenantCacheEvictor,
+                auditLogService
         );
     }
 
@@ -147,33 +174,46 @@ class IssueServiceImplTest {
     }
 
     @Test
-    void deletingIssueArchivesInsteadOfHardDeleting() {
+    void deletingIssueRemovesLinkedRecordsBeforeHardDeletingIssue() {
         Issue issue = issue(10L, "OPEN");
 
         when(issueRepository.findById(issue.getId())).thenReturn(Optional.of(issue));
-        when(issueRepository.save(issue)).thenReturn(issue);
 
         service.deleteIssue(issue.getId());
 
-        assertThat(issue.getArchived()).isTrue();
-        verify(issueRepository).save(issue);
-        verify(issueRepository, never()).delete(any(Issue.class));
+        InOrder inOrder = inOrder(
+                maintenanceRequestRepository,
+                issueAssignmentRepository,
+                issueStatusHistoryRepository,
+                commentRepository,
+                attachmentRepository,
+                workLogRepository,
+                aiClassificationLogRepository,
+                issueRepository
+        );
+        inOrder.verify(maintenanceRequestRepository).deleteByIssue_Id(issue.getId());
+        inOrder.verify(issueAssignmentRepository).deleteByIssueId(issue.getId());
+        inOrder.verify(issueStatusHistoryRepository).deleteByIssueId(issue.getId());
+        inOrder.verify(commentRepository).deleteByIssueId(issue.getId());
+        inOrder.verify(attachmentRepository).deleteByIssueId(issue.getId());
+        inOrder.verify(workLogRepository).deleteByIssueId(issue.getId());
+        inOrder.verify(aiClassificationLogRepository).deleteByIssueId(issue.getId());
+        inOrder.verify(issueRepository).delete(issue);
+        verify(issueRepository, never()).save(any(Issue.class));
+        verify(tenantCacheEvictor).evictCurrentTenant("issues");
     }
 
     @Test
-    void deletingAssignedIssueArchivesWithoutDeletingAssignmentHistory() {
+    void deletingAssignedIssueDeletesLinkedMaintenanceAndAssignmentRows() {
         Issue issue = issue(10L, "ASSIGNED");
 
         when(issueRepository.findById(issue.getId())).thenReturn(Optional.of(issue));
-        when(issueRepository.save(issue)).thenReturn(issue);
 
         service.deleteIssue(issue.getId());
 
-        assertThat(issue.getArchived()).isTrue();
-        verify(issueRepository).save(issue);
-        verify(issueRepository, never()).delete(any(Issue.class));
-        verify(issueAssignmentRepository, never()).delete(any(IssueAssignment.class));
-        verify(maintenanceRequestRepository, never()).delete(any(MaintenanceRequest.class));
+        verify(maintenanceRequestRepository).deleteByIssue_Id(issue.getId());
+        verify(issueAssignmentRepository).deleteByIssueId(issue.getId());
+        verify(issueRepository).delete(issue);
     }
 
     @Test
@@ -559,9 +599,86 @@ class IssueServiceImplTest {
         assertThat(response.getAssignedTechnicianUserId()).isNull();
         assertThat(response.getAiCategoryConfidence()).isNull();
         assertThat(response.getAiCategoryReason()).isNull();
+        assertThat(response.getAiClassificationStatus()).isEqualTo("PENDING");
         verify(issueAutoClassificationJob).classifyAndAssign(70L, resident.getId());
         verify(maintenanceRequestRepository, never()).save(any());
         verify(issueCategoryRepository, never()).findById(777L);
+    }
+
+    @Test
+    void staffCreatingIssueWithoutManualCategoryReturnsPendingClassificationStatus() {
+        User staff = user(10L, 2L, true);
+        Apartment requestedApartment = apartment(30L);
+        CreateIssueRequest request = createIssueRequest(requestedApartment.getId());
+        TenantContext.set(1L, "tenant", "tenant", staff.getId(), "ROLE_STAFF");
+
+        when(userRepository.findById(staff.getId())).thenReturn(Optional.of(staff));
+        when(apartmentRepository.findById(requestedApartment.getId())).thenReturn(Optional.of(requestedApartment));
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(70L);
+            return issue;
+        });
+        when(issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(70L))
+                .thenReturn(Optional.empty());
+
+        IssueResponseDTO response = service.createIssue(request);
+
+        assertThat(response.getAiClassificationStatus()).isEqualTo("PENDING");
+        verify(issueAutoClassificationJob).classifyAndAssign(70L, staff.getId());
+    }
+
+    @Test
+    void staffCreatingIssueWithManualCategoryReturnsCompletedClassificationStatus() {
+        User staff = user(10L, 2L, true);
+        Apartment requestedApartment = apartment(30L);
+        IssueCategory plumbing = issueCategory(40L, "Plumbing", "Plumbing");
+        CreateIssueRequest request = createIssueRequest(requestedApartment.getId());
+        request.setCategoryId(plumbing.getId());
+        TenantContext.set(1L, "tenant", "tenant", staff.getId(), "ROLE_STAFF");
+
+        when(userRepository.findById(staff.getId())).thenReturn(Optional.of(staff));
+        when(apartmentRepository.findById(requestedApartment.getId())).thenReturn(Optional.of(requestedApartment));
+        when(issueCategoryRepository.findById(plumbing.getId())).thenReturn(Optional.of(plumbing));
+        when(issueRepository.save(any(Issue.class))).thenAnswer(invocation -> {
+            Issue issue = invocation.getArgument(0);
+            issue.setId(70L);
+            return issue;
+        });
+        when(issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(70L))
+                .thenReturn(Optional.empty());
+
+        IssueResponseDTO response = service.createIssue(request);
+
+        assertThat(response.getAiClassificationStatus()).isEqualTo("COMPLETED");
+        verify(issueAutoClassificationJob, never()).classifyAndAssign(any(), any());
+    }
+
+    @Test
+    void existingCategorizedIssueWithoutPersistedClassificationStatusMapsToCompleted() {
+        Issue issue = issue(10L, "OPEN");
+        issue.setCategory(issueCategory(40L, "Plumbing", "Plumbing"));
+
+        when(issueRepository.findById(issue.getId())).thenReturn(Optional.of(issue));
+        when(issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(issue.getId()))
+                .thenReturn(Optional.empty());
+
+        IssueResponseDTO response = service.getIssueById(issue.getId());
+
+        assertThat(response.getAiClassificationStatus()).isEqualTo("COMPLETED");
+    }
+
+    @Test
+    void existingUncategorizedIssueWithoutPersistedClassificationStatusMapsToNeedsReview() {
+        Issue issue = issue(10L, "OPEN");
+
+        when(issueRepository.findById(issue.getId())).thenReturn(Optional.of(issue));
+        when(issueAssignmentRepository.findTopByIssueIdOrderByAssignedAtDescIdDesc(issue.getId()))
+                .thenReturn(Optional.empty());
+
+        IssueResponseDTO response = service.getIssueById(issue.getId());
+
+        assertThat(response.getAiClassificationStatus()).isEqualTo("NEEDS_REVIEW");
     }
 
     @Test

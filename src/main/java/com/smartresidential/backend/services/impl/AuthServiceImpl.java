@@ -314,6 +314,8 @@ public class AuthServiceImpl implements AuthService {
                 tenant.getIdentifier()
         );
 
+        persistLoginSession(user, accessToken);
+
         return new AuthTokens(new LoginResponse(
                 accessToken,
                 user.getEmail(),

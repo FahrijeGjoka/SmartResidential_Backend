@@ -1,6 +1,8 @@
 package com.smartresidential.backend.services.impl;
 
+import com.smartresidential.backend.dto.common.PageRequestFactory;
 import com.smartresidential.backend.dto.notification.CreateNotificationRequest;
+import com.smartresidential.backend.dto.notification.NotificationFilterRequest;
 import com.smartresidential.backend.dto.notification.NotificationResponseDTO;
 import com.smartresidential.backend.entities.Notification;
 import com.smartresidential.backend.entities.User;
@@ -8,6 +10,8 @@ import com.smartresidential.backend.exceptions.ResourceNotFoundException;
 import com.smartresidential.backend.repositories.NotificationRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.services.interfaces.NotificationService;
+import com.smartresidential.backend.specifications.NotificationSpecification;
+import org.springframework.data.domain.Page;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -60,6 +64,14 @@ public class NotificationServiceImpl implements NotificationService {
                 .stream()
                 .map(this::mapToDto)
                 .toList();
+    }
+
+    @Override
+    public Page<NotificationResponseDTO> search(NotificationFilterRequest filter) {
+        return repository.findAll(
+                NotificationSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "createdAt")
+        ).map(this::mapToDto);
     }
 
     @Override

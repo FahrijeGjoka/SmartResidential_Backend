@@ -1,8 +1,12 @@
 package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.dto.notification.CreateNotificationRequest;
+import com.smartresidential.backend.dto.notification.NotificationFilterRequest;
 import com.smartresidential.backend.dto.notification.NotificationResponseDTO;
 import com.smartresidential.backend.services.interfaces.NotificationService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -25,6 +29,14 @@ public class NotificationController {
     @GetMapping
     public List<NotificationResponseDTO> getAll() {
         return service.getByUser(null);
+    }
+
+    @Operation(summary = "Search and filter notifications")
+    @GetMapping("/search")
+    public Page<NotificationResponseDTO> search(
+            @ParameterObject @ModelAttribute NotificationFilterRequest filter
+    ) {
+        return service.search(filter);
     }
 
     @GetMapping("/user/{userId}")

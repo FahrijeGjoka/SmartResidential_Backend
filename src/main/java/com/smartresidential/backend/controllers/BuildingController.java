@@ -1,9 +1,13 @@
 package com.smartresidential.backend.controllers;
 
+import com.smartresidential.backend.dto.building.BuildingFilterRequest;
 import com.smartresidential.backend.dto.building.BuildingResponseDTO;
 import com.smartresidential.backend.dto.building.CreateBuildingRequest;
 import com.smartresidential.backend.dto.building.UpdateBuildingRequest;
 import com.smartresidential.backend.services.interfaces.BuildingService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,6 +44,14 @@ public class BuildingController {
     public ResponseEntity<List<BuildingResponseDTO>> getAllBuildings() {
         List<BuildingResponseDTO> response = buildingService.getAllBuildings();
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Search and filter buildings")
+    @GetMapping("/search")
+    public ResponseEntity<Page<BuildingResponseDTO>> searchBuildings(
+            @ParameterObject @ModelAttribute BuildingFilterRequest filter
+    ) {
+        return ResponseEntity.ok(buildingService.searchBuildings(filter));
     }
 
     @PutMapping("/{id}")

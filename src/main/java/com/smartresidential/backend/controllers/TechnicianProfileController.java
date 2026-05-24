@@ -1,9 +1,13 @@
 package com.smartresidential.backend.controllers;
 
 import com.smartresidential.backend.dto.technicianProfile.CreateTechnicianProfileRequest;
+import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileFilterRequest;
 import com.smartresidential.backend.dto.technicianProfile.TechnicianProfileResponseDTO;
 import com.smartresidential.backend.dto.technicianProfile.UpdateTechnicianProfileRequest;
 import com.smartresidential.backend.services.interfaces.TechnicianProfileService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
@@ -28,6 +32,14 @@ public class TechnicianProfileController {
     @GetMapping
     public List<TechnicianProfileResponseDTO> getAll() {
         return service.getAll();
+    }
+
+    @Operation(summary = "Search and filter technician profiles")
+    @GetMapping("/search")
+    public Page<TechnicianProfileResponseDTO> search(
+            @ParameterObject @ModelAttribute TechnicianProfileFilterRequest filter
+    ) {
+        return service.search(filter);
     }
 
     @GetMapping("/{id}")

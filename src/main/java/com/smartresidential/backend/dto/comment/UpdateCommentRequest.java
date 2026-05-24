@@ -3,11 +3,10 @@ package com.smartresidential.backend.dto.comment;
 import java.time.LocalDateTime;
 
 public class UpdateCommentRequest {
-    private Long id;  // ID e komentit për t'u azhurnuar
+    private Long id;
     private String content;
     private LocalDateTime timestamp;
 
-    // Getter dhe Setter
     public Long getId() {
         return id;
     }

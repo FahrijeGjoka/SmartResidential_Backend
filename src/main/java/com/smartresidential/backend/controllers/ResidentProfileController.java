@@ -3,7 +3,11 @@ package com.smartresidential.backend.controllers;
 import com.smartresidential.backend.dto.residentProfile.CreateResidentProfileRequest;
 import com.smartresidential.backend.dto.residentProfile.ResidentProfileResponseDTO;
 import com.smartresidential.backend.dto.residentProfile.UpdateResidentProfileRequest;
+import com.smartresidential.backend.dto.residentprofile.ResidentProfileFilterRequest;
 import com.smartresidential.backend.services.interfaces.ResidentProfileService;
+import io.swagger.v3.oas.annotations.Operation;
+import org.springdoc.core.annotations.ParameterObject;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -46,6 +50,14 @@ public class ResidentProfileController {
                 residentProfileService.getAllResidentProfiles();
 
         return ResponseEntity.ok(response);
+    }
+
+    @Operation(summary = "Search and filter resident profiles")
+    @GetMapping("/search")
+    public ResponseEntity<Page<ResidentProfileResponseDTO>> searchResidentProfiles(
+            @ParameterObject @ModelAttribute ResidentProfileFilterRequest filter
+    ) {
+        return ResponseEntity.ok(residentProfileService.searchResidentProfiles(filter));
     }
 
     @GetMapping("/building/{buildingId}")

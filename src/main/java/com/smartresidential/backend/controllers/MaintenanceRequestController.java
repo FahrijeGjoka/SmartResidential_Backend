@@ -22,7 +22,6 @@ public class MaintenanceRequestController {
         this.maintenanceRequestService = maintenanceRequestService;
     }
 
-    // ✅ CREATE
     @PostMapping
     @PreAuthorize("hasAnyAuthority('ROLE_ADMIN', 'ROLE_STAFF')")
     public ResponseEntity<MaintenanceRequestResponseDTO> createMaintenanceRequest(
@@ -33,7 +32,6 @@ public class MaintenanceRequestController {
         );
     }
 
-    // ✅ GET BY ID
     @GetMapping("/{id}")
     public ResponseEntity<MaintenanceRequestResponseDTO> getById(@PathVariable Long id) {
         return ResponseEntity.ok(
@@ -41,7 +39,6 @@ public class MaintenanceRequestController {
         );
     }
 
-    // ✅ GET ALL
     @GetMapping
     public ResponseEntity<List<MaintenanceRequestResponseDTO>> getAll() {
         return ResponseEntity.ok(
@@ -49,7 +46,6 @@ public class MaintenanceRequestController {
         );
     }
 
-    // ✅ CHECK IF EXISTS BY ISSUE
     @GetMapping("/exists/{issueId}")
     public ResponseEntity<Boolean> existsByIssue(@PathVariable Long issueId) {
         return ResponseEntity.ok(

@@ -19,27 +19,18 @@ public class MaintenanceRequestSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ISSUE FILTER (CORE)
-            // =========================
             if (filter.getIssueId() != null) {
                 predicates.add(
                         cb.equal(root.get("issue").get("id"), filter.getIssueId())
                 );
             }
 
-            // =========================
-            // 🔥 REQUESTED BY USER
-            // =========================
             if (filter.getRequestedByUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("requestedBy").get("id"), filter.getRequestedByUserId())
                 );
             }
 
-            // =========================
-            // 🔥 DESCRIPTION SEARCH
-            // =========================
             if (filter.getDescription() != null && !filter.getDescription().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -49,9 +40,6 @@ public class MaintenanceRequestSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 REQUESTED AT RANGE
-            // =========================
             if (filter.getRequestedAfter() != null && filter.getRequestedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("requestedAt"),

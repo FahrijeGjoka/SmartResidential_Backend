@@ -1,6 +1,8 @@
 package com.smartresidential.backend.dto.auditLog;
 
 import com.smartresidential.backend.dto.common.BaseFilterRequest;
+import org.springframework.format.annotation.DateTimeFormat;
+
 import java.time.LocalDateTime;
 
 public class AuditLogFilterRequest extends BaseFilterRequest {
@@ -13,8 +15,10 @@ public class AuditLogFilterRequest extends BaseFilterRequest {
 
     private Long entityId;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdAfter;
 
+    @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
     private LocalDateTime createdBefore;
 
     public Long getUserId() {

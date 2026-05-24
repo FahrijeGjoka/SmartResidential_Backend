@@ -7,7 +7,6 @@ public class CreateCommentRequest {
     private String content;
     private LocalDateTime timestamp;
 
-    // Getter dhe Setter
     public Long getUserId() {
         return userId;
     }

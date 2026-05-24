@@ -1,6 +1,7 @@
 package com.smartresidential.backend.mapper;
 
 import com.smartresidential.backend.dto.issue.IssueResponseDTO;
+import com.smartresidential.backend.entities.AIClassificationStatus;
 import com.smartresidential.backend.entities.Issue;
 import com.smartresidential.backend.entities.IssueAssignment;
 import com.smartresidential.backend.entities.User;
@@ -26,6 +27,7 @@ public class IssueMapper {
         response.setCategoryName(issue.getCategory() != null ? issue.getCategory().getName() : null);
         response.setAiCategoryConfidence(issue.getAiCategoryConfidence());
         response.setAiCategoryReason(issue.getAiCategoryReason());
+        response.setAiClassificationStatus(resolveAiClassificationStatus(issue).name());
         response.setStatus(STATUS_ASSIGNED.equals(issue.getStatus()) && currentAssignment.isEmpty()
                 ? STATUS_OPEN
                 : issue.getStatus());
@@ -38,6 +40,16 @@ public class IssueMapper {
         response.setCreatedAt(issue.getCreatedAt());
         response.setUpdatedAt(issue.getUpdatedAt());
         return response;
+    }
+
+    private AIClassificationStatus resolveAiClassificationStatus(Issue issue) {
+        if (issue.getAiClassificationStatus() != null) {
+            return issue.getAiClassificationStatus();
+        }
+
+        return issue.getCategory() == null
+                ? AIClassificationStatus.NEEDS_REVIEW
+                : AIClassificationStatus.COMPLETED;
     }
 
     private String formatTechnicianName(User technician) {

@@ -19,36 +19,24 @@ public class AIClassificationLogSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ISSUE RELATION FILTER
-            // =========================
             if (filter.getIssueId() != null) {
                 predicates.add(
                         cb.equal(root.get("issue").get("id"), filter.getIssueId())
                 );
             }
 
-            // =========================
-            // 🔥 CATEGORY FILTER
-            // =========================
             if (filter.getPredictedCategory() != null && !filter.getPredictedCategory().isEmpty()) {
                 predicates.add(
                         cb.equal(root.get("predictedCategory"), filter.getPredictedCategory())
                 );
             }
 
-            // =========================
-            // 🔥 PRIORITY FILTER
-            // =========================
             if (filter.getPredictedPriority() != null && !filter.getPredictedPriority().isEmpty()) {
                 predicates.add(
                         cb.equal(root.get("predictedPriority"), filter.getPredictedPriority())
                 );
             }
 
-            // =========================
-            // 🔥 CONFIDENCE SCORE RANGE
-            // =========================
             if (filter.getMinConfidenceScore() != null) {
                 predicates.add(
                         cb.greaterThanOrEqualTo(root.get("confidenceScore"), filter.getMinConfidenceScore())
@@ -61,9 +49,6 @@ public class AIClassificationLogSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 DATE RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

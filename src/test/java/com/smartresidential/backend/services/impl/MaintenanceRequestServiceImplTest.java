@@ -13,6 +13,7 @@ import com.smartresidential.backend.repositories.IssueRepository;
 import com.smartresidential.backend.repositories.MaintenanceRequestRepository;
 import com.smartresidential.backend.repositories.UserRepository;
 import com.smartresidential.backend.dto.maintenanceRequest.CreateMaintenanceRequestRequest;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,6 +43,9 @@ class MaintenanceRequestServiceImplTest {
     @Mock
     private IssueAssignmentRepository issueAssignmentRepository;
 
+    @Mock
+    private AuditLogService auditLogService;
+
     @AfterEach
     void tearDown() {
         TenantContext.clear();
@@ -54,7 +58,8 @@ class MaintenanceRequestServiceImplTest {
                         maintenanceRequestRepository,
                         userRepository,
                         issueRepository,
-                        issueAssignmentRepository
+                        issueAssignmentRepository,
+                        auditLogService
                 );
 
         when(maintenanceRequestRepository.findAll()).thenReturn(List.of());
@@ -65,13 +70,14 @@ class MaintenanceRequestServiceImplTest {
     }
 
     @Test
-    void getAllMaintenanceRequestsMapsMissingIssueAndRequesterSafely() {
+    void getAllMaintenanceRequestsDoesNotReturnOrphanedMaintenanceRows() {
         MaintenanceRequestServiceImpl service =
                 new MaintenanceRequestServiceImpl(
                         maintenanceRequestRepository,
                         userRepository,
                         issueRepository,
-                        issueAssignmentRepository
+                        issueAssignmentRepository,
+                        auditLogService
                 );
         MaintenanceRequest maintenanceRequest = new MaintenanceRequest();
         maintenanceRequest.setId(10L);
@@ -81,10 +87,21 @@ class MaintenanceRequestServiceImplTest {
 
         List<MaintenanceRequestResponseDTO> response = service.getAllMaintenanceRequests();
 
-        assertThat(response).hasSize(1);
-        assertThat(response.get(0).getIssueId()).isNull();
-        assertThat(response.get(0).getRequestedById()).isNull();
-        assertThat(response.get(0).getDescription()).isEqualTo("Escalate manually");
+        assertThat(response).isEmpty();
+    }
+
+    @Test
+    void getAllMaintenanceRequestsDoesNotReturnArchivedIssues() {
+        MaintenanceRequestServiceImpl service = service();
+        Issue archivedIssue = issue(10L, "Archived issue", "ASSIGNED", "HIGH");
+        archivedIssue.setArchived(true);
+        MaintenanceRequest maintenanceRequest = maintenanceRequest(1L, archivedIssue, user(1L, "Admin", "User"));
+
+        when(maintenanceRequestRepository.findAll()).thenReturn(List.of(maintenanceRequest));
+
+        List<MaintenanceRequestResponseDTO> response = service.getAllMaintenanceRequests();
+
+        assertThat(response).isEmpty();
     }
 
     @Test
@@ -146,7 +163,8 @@ class MaintenanceRequestServiceImplTest {
                 maintenanceRequestRepository,
                 userRepository,
                 issueRepository,
-                issueAssignmentRepository
+                issueAssignmentRepository,
+                auditLogService
         );
     }
 

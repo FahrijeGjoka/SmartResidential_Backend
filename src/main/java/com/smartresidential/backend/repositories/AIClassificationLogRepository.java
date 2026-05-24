@@ -12,6 +12,8 @@ public interface AIClassificationLogRepository extends JpaRepository<AIClassific
 
     List<AIClassificationLog> findByIssueId(Long issueId);
 
+    void deleteByIssueId(Long issueId);
+
     List<AIClassificationLog> findByPredictedCategory(String predictedCategory);
 
     List<AIClassificationLog> findByPredictedPriority(String predictedPriority);

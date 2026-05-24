@@ -19,27 +19,18 @@ public class ResidentProfileSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 USER FILTER
-            // =========================
             if (filter.getUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("user").get("id"), filter.getUserId())
                 );
             }
 
-            // =========================
-            // 🔥 APARTMENT FILTER
-            // =========================
             if (filter.getApartmentId() != null) {
                 predicates.add(
                         cb.equal(root.get("apartment").get("id"), filter.getApartmentId())
                 );
             }
 
-            // =========================
-            // 🔥 MOVED IN RANGE
-            // =========================
             if (filter.getMovedInAfter() != null && filter.getMovedInBefore() != null) {
                 predicates.add(
                         cb.between(root.get("movedInAt"),

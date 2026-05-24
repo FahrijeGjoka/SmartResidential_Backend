@@ -8,6 +8,8 @@ public interface IssueStatusHistoryRepository extends BaseRepository<IssueStatus
 
     List<IssueStatusHistory> findByIssueId(Long issueId);
 
+    void deleteByIssueId(Long issueId);
+
     List<IssueStatusHistory> findByChangedById(Long userId);
 
     List<IssueStatusHistory> findByIssueIdOrderByChangedAtDesc(Long issueId);

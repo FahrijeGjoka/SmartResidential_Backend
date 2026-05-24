@@ -19,27 +19,18 @@ public class WorkLogSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ISSUE FILTER
-            // =========================
             if (filter.getIssueId() != null) {
                 predicates.add(
                         cb.equal(root.get("issue").get("id"), filter.getIssueId())
                 );
             }
 
-            // =========================
-            // 🔥 TECHNICIAN FILTER
-            // =========================
             if (filter.getTechnicianId() != null) {
                 predicates.add(
                         cb.equal(root.get("technician").get("id"), filter.getTechnicianId())
                 );
             }
 
-            // =========================
-            // 🔥 DESCRIPTION SEARCH
-            // =========================
             if (filter.getDescription() != null && !filter.getDescription().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -49,9 +40,6 @@ public class WorkLogSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 HOURS SPENT RANGE
-            // =========================
             if (filter.getMinHoursSpent() != null && filter.getMaxHoursSpent() != null) {
                 predicates.add(
                         cb.between(root.get("hoursSpent"),
@@ -68,9 +56,6 @@ public class WorkLogSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

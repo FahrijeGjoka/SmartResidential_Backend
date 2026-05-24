@@ -18,4 +18,6 @@ public interface WorkLogRepository extends BaseRepository<WorkLog, Long> {
 
 
     List<WorkLog> findByIssueId(Long issueId);
+
+    void deleteByIssueId(Long issueId);
 }

@@ -19,18 +19,12 @@ public class ApartmentSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 BUILDING FILTER
-            // =========================
             if (filter.getBuildingId() != null) {
                 predicates.add(
                         cb.equal(root.get("building").get("id"), filter.getBuildingId())
                 );
             }
 
-            // =========================
-            // 🔥 UNIT NUMBER SEARCH
-            // =========================
             if (filter.getUnitNumber() != null && !filter.getUnitNumber().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -40,18 +34,12 @@ public class ApartmentSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 FLOOR FILTER
-            // =========================
             if (filter.getFloor() != null) {
                 predicates.add(
                         cb.equal(root.get("floor"), filter.getFloor())
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

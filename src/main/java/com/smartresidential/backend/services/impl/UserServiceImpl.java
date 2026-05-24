@@ -1,6 +1,8 @@
 package com.smartresidential.backend.services.impl;
 
 import com.smartresidential.backend.dto.user.CreateUserRequest;
+import com.smartresidential.backend.dto.common.PageRequestFactory;
+import com.smartresidential.backend.dto.user.UserFilterRequest;
 import com.smartresidential.backend.entities.Role;
 import com.smartresidential.backend.entities.Tenant;
 import com.smartresidential.backend.entities.User;
@@ -11,7 +13,9 @@ import com.smartresidential.backend.multitenancy.TenantContext;
 import com.smartresidential.backend.repositories.RoleRepository;
 import com.smartresidential.backend.repositories.TenantRepository;
 import com.smartresidential.backend.repositories.UserRepository;
+import com.smartresidential.backend.services.interfaces.AuditLogService;
 import com.smartresidential.backend.services.interfaces.UserService;
+import com.smartresidential.backend.specifications.UserSpecification;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.springframework.data.domain.Page;
@@ -34,22 +38,26 @@ public class UserServiceImpl implements UserService {
 
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
+    private final AuditLogService auditLogService;
 
     public UserServiceImpl(
             UserRepository userRepository,
             TenantRepository tenantRepository,
             RoleRepository roleRepository,
-            PasswordEncoder passwordEncoder
+            PasswordEncoder passwordEncoder,
+            AuditLogService auditLogService
     ) {
         this.userRepository = userRepository;
         this.tenantRepository = tenantRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
+        this.auditLogService = auditLogService;
     }
 
     @Override
     @Transactional
     public User createUser(CreateUserRequest request) {
+        Long actingUserId = TenantContext.getUserId();
 
         Tenant tenant = tenantRepository.findById(request.getTenantId())
                 .orElseThrow(() -> new TenantNotFoundException("Tenant not found"));
@@ -62,7 +70,7 @@ public class UserServiceImpl implements UserService {
                     tenant.getId(),
                     tenant.getSchemaName(),
                     tenant.getIdentifier(),
-                    null,
+                    actingUserId,
                     role.getName()
             );
 
@@ -83,7 +91,9 @@ public class UserServiceImpl implements UserService {
             user.setRoleId(request.getRoleId());
             user.setIsActive(true);
 
-            return userRepository.save(user);
+            User savedUser = userRepository.save(user);
+            auditLogService.logCurrentUser("USER_CREATED", "USER", savedUser.getId());
+            return savedUser;
 
         } finally {
             TenantContext.clear();
@@ -98,6 +108,14 @@ public class UserServiceImpl implements UserService {
     @Override
     public Page<User> getAllUsers(Pageable pageable) {
         return userRepository.findAll(pageable);
+    }
+
+    @Override
+    public Page<User> searchUsers(UserFilterRequest filter) {
+        return userRepository.findAll(
+                UserSpecification.withFilters(filter),
+                PageRequestFactory.from(filter, "createdAt")
+        );
     }
 
     @Override
@@ -149,7 +167,9 @@ public class UserServiceImpl implements UserService {
         existingUser.setRoleId(user.getRoleId());
         existingUser.setIsActive(user.getIsActive());
 
-        return userRepository.save(existingUser);
+        User savedUser = userRepository.save(existingUser);
+        auditLogService.logCurrentUser("USER_UPDATED", "USER", savedUser.getId());
+        return savedUser;
     }
 
     private int nextTokenVersion(User user) {
@@ -173,7 +193,9 @@ public class UserServiceImpl implements UserService {
 
         user.setIsActive(true);
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        auditLogService.logCurrentUser("USER_ACTIVATED", "USER", savedUser.getId());
+        return savedUser;
     }
 
     @Override
@@ -184,7 +206,9 @@ public class UserServiceImpl implements UserService {
 
         user.setIsActive(false);
 
-        return userRepository.save(user);
+        User savedUser = userRepository.save(user);
+        auditLogService.logCurrentUser("USER_DEACTIVATED", "USER", savedUser.getId());
+        return savedUser;
     }
 
     @Override

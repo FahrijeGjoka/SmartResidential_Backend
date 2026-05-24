@@ -19,27 +19,18 @@ public class CommentSpecification {
 
             List<Predicate> predicates = new ArrayList<>();
 
-            // =========================
-            // 🔥 ISSUE FILTER (CORE)
-            // =========================
             if (filter.getIssueId() != null) {
                 predicates.add(
                         cb.equal(root.get("issue").get("id"), filter.getIssueId())
                 );
             }
 
-            // =========================
-            // 🔥 USER FILTER
-            // =========================
             if (filter.getUserId() != null) {
                 predicates.add(
                         cb.equal(root.get("user").get("id"), filter.getUserId())
                 );
             }
 
-            // =========================
-            // 🔥 CONTENT SEARCH
-            // =========================
             if (filter.getContent() != null && !filter.getContent().isEmpty()) {
                 predicates.add(
                         cb.like(
@@ -49,9 +40,6 @@ public class CommentSpecification {
                 );
             }
 
-            // =========================
-            // 🔥 CREATED AT RANGE
-            // =========================
             if (filter.getCreatedAfter() != null && filter.getCreatedBefore() != null) {
                 predicates.add(
                         cb.between(root.get("createdAt"),

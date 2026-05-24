@@ -111,6 +111,21 @@ class AuditLogServiceImplTest {
     }
 
     @Test
+    void getAllReturnsAllLogsNewestFirstFromRepository() {
+        User user = user(1L);
+        AuditLog newest = auditLog(20L, user, "UPDATE", "ISSUE", 200L);
+        AuditLog older = auditLog(10L, user, "CREATE", "ISSUE", 100L);
+
+        when(repository.findAllByOrderByCreatedAtDescIdDesc())
+                .thenReturn(List.of(newest, older));
+
+        List<AuditLogResponseDTO> result = service.getAll();
+
+        assertThat(result).extracting(AuditLogResponseDTO::getId)
+                .containsExactly(20L, 10L);
+    }
+
+    @Test
     void getByUserReturnsMappedDtos() {
 
         User user = user(1L);
